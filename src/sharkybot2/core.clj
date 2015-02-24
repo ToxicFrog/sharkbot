@@ -11,8 +11,20 @@
 (def ^:dynamic *irc* nil)
 (def ^:dynamic *msg* nil)
 
+(defn pronoun [nick]
+  (-> *state*
+      :users
+      (get nick {})
+      :pronouns
+      {:m "his" :f "her" :t "their"}
+      (or "their")))
+
 (defn reply [& text]
   (apply irc/reply *irc* *msg* text))
+
+(defn update-user [nick k v]
+  (let [user (-> *state* :users (get nick {}))]
+    (assoc-in *state* [:users nick k] v)))
 
 ; If the user has a spoiler level set, inc the spoiler refcount.
 ; If this results in a lower spoiler level, report it.
@@ -30,12 +42,18 @@
 
 (defn eat-victim [victim]
   (prn "EAT" victim)
-  (reply "ACTION drags" victim "beneath the waves, swimming around for a while before spitting their mangled remains back out.")
+  (reply "ACTION drags" victim "beneath the waves, swimming around for a while before spitting" (pronoun victim) "mangled remains back out.")
   *state*)
 
 (defn set-pronouns [nick pronouns]
   (prn "PRONOUNS" nick pronouns)
-  *state*)
+  (let [pronouns (keyword pronouns)
+        known-pronouns #{:m :f :t}]
+    (if (known-pronouns pronouns)
+      (do
+        (reply "Done.")
+        (update-user nick :pronouns pronouns))
+      *state*)))
 
 (defn set-spoilers [nick spoilers]
   (prn "SPOILERS" nick spoilers))
