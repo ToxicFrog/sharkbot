@@ -1,36 +1,17 @@
 # sharkybot2
 
-FIXME: description
+A simple IRC bot for #gbchat, the Gentleman Bastards fan channel. Remembers pronouns and spoiler levels and eats people.
 
 ## Installation
 
-Download from http://example.com/FIXME.
+TODO
 
 ## Usage
 
-FIXME: explanation
-
-    $ java -jar sharkybot2-0.1.0-standalone.jar [args]
-
-## Options
-
-FIXME: listing of options this app accepts.
-
-## Examples
-
-...
-
-### Bugs
-
-...
-
-### Any Other Sections
-### That You Think
-### Might be Useful
+`lein run`. Connects and joins automatically. TODO: specify IRC info on command line.
 
 ## License
 
-Copyright © 2015 FIXME
+Copyright © 2015 Ben 'ToxicFrog' Kelly
 
-Distributed under the Eclipse Public License either version 1.0 or (at
-your option) any later version.
+Released under the MIT license; see the LICENSE file for details.
