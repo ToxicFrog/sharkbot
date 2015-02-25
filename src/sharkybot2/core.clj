@@ -1,10 +1,14 @@
 (ns sharkybot2.core
   (:require [irclj.core :as irc]
             [clojure.string :as string]
-            [clojure.tools.cli :as cli])
+            [clojure.tools.cli :as cli]
+            [clojure.tools.reader.edn :as edn]
+            [clojure.java.io :as io])
   (:gen-class))
 
 (def opts (atom nil))
+(defn getopt [key]
+  (-> @opts :options key))
 (def flags
   [["-s" "--server HOST" "IRC server to connect to"
     :default "irc.freenode.net"]
@@ -23,12 +27,22 @@
 ; :spoilers { :LoLL 0 :RSURS 0 :RoT 3 }
 (def state (atom {:users {} :spoilers {}}))
 
-(def ^:dynamic *state* nil)
+(defn save-state [state]
+  (println "Saving state:" (pr-str state))
+  (spit (getopt :persistence) (prn-str state)))
+
+(defn load-state []
+  (if (.exists (io/as-file (getopt :persistence)))
+    (do
+      (reset! state (edn/read-string (slurp (getopt :persistence))))
+      (println "Loading state:" (pr-str @state)))
+    (println "Skipping state load -- persistence file missing.")))
+
 (def ^:dynamic *irc* nil)
 (def ^:dynamic *msg* nil)
 
 (defn pronoun [nick]
-  (-> *state*
+  (-> @state
       :users
       (get nick {})
       :pronouns
@@ -38,9 +52,15 @@
 (defn reply [& text]
   (apply irc/reply *irc* *msg* text))
 
+(defn inc-spoilers [level]
+  @state)
+
+(defn dec-spoilers [level]
+  @state)
+
 (defn update-user [nick k v]
-  (let [user (-> *state* :users (get nick {}))]
-    (assoc-in *state* [:users nick k] v)))
+  (let [user (-> @state :users (get nick {}))]
+    (assoc-in @state [:users nick k] v)))
 
 ; If the user has a spoiler level set, inc the spoiler refcount.
 ; If this results in a lower spoiler level, report it.
@@ -48,18 +68,22 @@
 ; save state.
 (defn on-join [nick user]
   (prn (str nick "!" user) "JOIN")
-  *state*)
+  (if-let [level (-> @state :users (get nick {}) :spoilers)]
+    (inc-spoilers level)
+    @state))
 
 ; If the user has a spoiler level set, dec the spoiler refcount.
 ; If this results in a higher spoiler level, report it.
 (defn on-quit [nick user]
   (prn (str nick "!" user) "QUIT")
-  *state*)
+  (if-let [level (-> @state :users (get nick {}) :spoilers)]
+    (dec-spoilers level)
+    @state))
 
 (defn eat-victim [victim]
   (prn "EAT" victim)
   (reply "ACTION drags" victim "beneath the waves, swimming around for a while before spitting" (pronoun victim) "mangled remains back out.")
-  *state*)
+  @state)
 
 (defn set-pronouns [nick pronouns]
   (prn "PRONOUNS" nick pronouns)
@@ -69,10 +93,12 @@
       (do
         (reply "Done.")
         (update-user nick :pronouns pronouns))
-      *state*)))
+      @state)))
 
-(defn set-spoilers [nick spoilers]
-  (prn "SPOILERS" nick spoilers))
+;(def spoilers ["none" "LoLL" "RSURS" "RoT"])
+(defn set-spoilers [nick level]
+  (prn "SPOILERS" nick level)
+  @state)
 
 (defn to-command [text]
   (let [nick (:nick @*irc*)]
@@ -91,7 +117,7 @@
       ("teeth" "eat") (eat-victim args)
       "pronouns" (set-pronouns nick args)
       "spoilers" (set-spoilers nick args)
-      *state*)))
+      @state)))
 
 (defn on-irc [server msg]
   (let [{text :text
@@ -99,8 +125,7 @@
          nick :nick
          user :user
          command :command} msg]
-    (binding [*state* @state
-              *irc* server
+    (binding [*irc* server
               *msg* msg]
       (let [state'
             (case command
@@ -108,8 +133,11 @@
               "JOIN"    (on-join nick user)
               "PART"    (on-quit nick user)
               "QUIT"    (on-quit nick user)
-              *state*)]
-        (reset! state state')))))
+              @state)]
+        (if (not= @state state')
+          (do
+            (save-state state')
+            (reset! state state')))))))
 
 (def callbacks
   {:privmsg on-irc
@@ -121,10 +149,12 @@
   "I don't do a whole lot ... yet."
   [& args]
   (reset! opts (cli/parse-opts args flags))
-  (let [port (-> @opts :options :port)
-        host (-> @opts :options :server)
-        nick (-> @opts :options :nick)
-        join (-> @opts :options :join)
+  (println @opts)
+  (load-state)
+  (let [port (getopt :port)
+        host (getopt :server)
+        nick (getopt :nick)
+        join (getopt :join)
         _ (println (str "Connecting to" host ":" port " as " nick))
         server (irc/connect host port nick :callbacks callbacks)]
     (println "Connected! Joining" join)
