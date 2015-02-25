@@ -89,21 +89,6 @@
   (reply "ACTION drags" victim "beneath the waves, swimming around for a while before spitting" (pronoun victim) "mangled remains back out.")
   @state)
 
-(defn set-pronouns [nick pronouns]
-  (prn "PRONOUNS" nick pronouns)
-  (let [pronouns (keyword pronouns)
-        known-pronouns #{:m :f :t}]
-    (if (known-pronouns pronouns)
-      (do
-        (reply "Done.")
-        (update-user nick :pronouns pronouns))
-      @state)))
-
-;(def spoilers ["none" "LoLL" "RSURS" "RoT"])
-(defn set-spoilers [nick level]
-  (prn "SPOILERS" nick level)
-  @state)
-
 (defn user-info [nick & _]
   (if (get-user nick)
     (do (reply (pr-str (get-user nick))) @state)
@@ -134,8 +119,6 @@
         args (map #(string/replace % #"[.!,;]" "") args)]
     (case command
       ("teeth" "eat") (apply eat-victim args)
-      "pronouns" (apply set-pronouns nick args)
-      "spoilers" (apply set-spoilers nick args)
       "set" (apply set-fields nick args)
       "info" (apply user-info args)
       @state)))
