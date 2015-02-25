@@ -101,8 +101,11 @@
 
 (defn set-fields [nick & kvs]
   (prn "SET" nick (keyify kvs))
-  (assoc-in @state [:users nick]
-            (apply assoc (get-user nick) (keyify kvs))))
+  (let [state'
+        (assoc-in @state [:users nick]
+                  (apply assoc (get-user nick) (keyify kvs)))]
+    (reply "Done.")
+    state'))
 
 (defn to-command [text]
   (let [nick (:nick @*irc*)]
@@ -131,17 +134,21 @@
          command :command} msg]
     (binding [*irc* server
               *msg* msg]
-      (let [state'
-            (case command
-              "PRIVMSG" (on-privmsg nick user text)
-              "JOIN"    (on-join nick user)
-              "PART"    (on-quit nick user)
-              "QUIT"    (on-quit nick user)
-              @state)]
-        (if (not= @state state')
-          (do
-            (save-state state')
-            (reset! state state')))))))
+      (try
+        (let [state'
+              (case command
+                "PRIVMSG" (on-privmsg nick user text)
+                "JOIN"    (on-join nick user)
+                "PART"    (on-quit nick user)
+                "QUIT"    (on-quit nick user)
+                @state)]
+          (if (not= @state state')
+            (do
+              (save-state state')
+              (reset! state state'))))
+        (catch Exception e
+          (println "Error executing command:" text)
+          (println "  >>" (.getMessage e)))))))
 
 (def callbacks
   {:privmsg on-irc
