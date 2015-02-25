@@ -46,7 +46,8 @@
       :users
       (get nick {})
       :pronouns
-      {:m "his" :f "her" :t "their"}
+      {:m "his" :f "her" :t "their"
+       "m" "his" "f" "her" "t" "their"}
       (or "their")))
 
 (defn reply [& text]
@@ -58,8 +59,11 @@
 (defn dec-spoilers [level]
   @state)
 
+(defn get-user [nick]
+  (-> @state :users (get nick {})))
+
 (defn update-user [nick k v]
-  (let [user (-> @state :users (get nick {}))]
+  (let [user (get-user nick)]
     (assoc-in @state [:users nick k] v)))
 
 ; If the user has a spoiler level set, inc the spoiler refcount.
@@ -68,7 +72,7 @@
 ; save state.
 (defn on-join [nick user]
   (prn (str nick "!" user) "JOIN")
-  (if-let [level (-> @state :users (get nick {}) :spoilers)]
+  (if-let [level ((get-user nick) :spoilers)]
     (inc-spoilers level)
     @state))
 
@@ -76,7 +80,7 @@
 ; If this results in a higher spoiler level, report it.
 (defn on-quit [nick user]
   (prn (str nick "!" user) "QUIT")
-  (if-let [level (-> @state :users (get nick {}) :spoilers)]
+  (if-let [level ((get-user nick) :spoilers)]
     (dec-spoilers level)
     @state))
 
@@ -100,23 +104,40 @@
   (prn "SPOILERS" nick level)
   @state)
 
+(defn user-info [nick & _]
+  (if (get-user nick)
+    (do (reply (pr-str (get-user nick))) @state)
+    @state))
+
+(defn keyify [kvs]
+  (->> kvs
+       (partition 2)
+       (mapcat (fn [kv] [(keyword (first kv)) (second kv)]))))
+
+(defn set-fields [nick & kvs]
+  (prn "SET" nick (keyify kvs))
+  (assoc-in @state [:users nick]
+            (apply assoc (get-user nick) (keyify kvs))))
+
 (defn to-command [text]
   (let [nick (:nick @*irc*)]
     (cond
-      (.startsWith text (str nick ", ")) (drop 1 (string/split text #"\s+" 4)) ; Sharky, command args
-      (.startsWith text "!") (-> text (subs 1) (string/split #"\s+" 3)) ; !command args
+      (.startsWith text (str nick ", ")) (drop 1 (string/split text #"\s+")) ; Sharky, command args
+      (.startsWith text "!") (-> text (subs 1) (string/split #"\s+")) ; !command args
       :else [nil ""])))
 
 ; should respond to both "!command args" and "Sharky2, command args"
 ; and also specific trigger text like "/me throws %s to the sharks"
 ; and "/me sends %s for teeth lessons"
 (defn on-privmsg [nick user text]
-  (let [[command args] (take 2 (to-command text))
-        args (-> args (string/replace #"[.!,;]" " ") (string/trim))]
+  (let [[command & args] (to-command text)
+        args (map #(string/replace % #"[.!,;]" "") args)]
     (case command
-      ("teeth" "eat") (eat-victim args)
-      "pronouns" (set-pronouns nick args)
-      "spoilers" (set-spoilers nick args)
+      ("teeth" "eat") (apply eat-victim args)
+      "pronouns" (apply set-pronouns nick args)
+      "spoilers" (apply set-spoilers nick args)
+      "set" (apply set-fields nick args)
+      "info" (apply user-info args)
       @state)))
 
 (defn on-irc [server msg]
