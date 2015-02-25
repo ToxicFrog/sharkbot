@@ -1,7 +1,23 @@
 (ns sharkybot2.core
   (:require [irclj.core :as irc]
-            [clojure.string :as string])
+            [clojure.string :as string]
+            [clojure.tools.cli :as cli])
   (:gen-class))
+
+(def opts (atom nil))
+(def flags
+  [["-s" "--server HOST" "IRC server to connect to"
+    :default "irc.freenode.net"]
+   ["-p" "--port PORT" "Port number of IRC server"
+    :default 6667
+    :parse-fn #(Integer/parseInt %)
+    :validate [#(< 0 % 0x10000) "Must be a number between 0 and 65536"]]
+   ["-n" "--nick NICK" "Nickname to use on IRC"
+    :default "SharkyMcJaws"]
+   ["-j" "--join CHANNELS" "Comma-separated list of channels to join"
+    :default "#gbchat"]
+   ["-P" "--persistence FILE" "Save bot state in this file"
+    :default "sharky.edn"]])
 
 ; :users { ToxicFrog { :pronouns :m :shark-time (datetime) :spoilers :RoT }}
 ; :spoilers { :LoLL 0 :RSURS 0 :RoT 3 }
@@ -104,6 +120,13 @@
 (defn -main
   "I don't do a whole lot ... yet."
   [& args]
-  (let [server (irc/connect "irc.freenode.net" 6667 "Sharky2" :callbacks callbacks)]
-    (irc/join server "#gbchat")
-    (println "Done connecting to IRC.")))
+  (reset! opts (cli/parse-opts args flags))
+  (let [port (-> @opts :options :port)
+        host (-> @opts :options :server)
+        nick (-> @opts :options :nick)
+        join (-> @opts :options :join)
+        _ (println (str "Connecting to" host ":" port " as " nick))
+        server (irc/connect host port nick :callbacks callbacks)]
+    (println "Connected! Joining" join)
+    (irc/join server join)
+    (println "Done.")))
