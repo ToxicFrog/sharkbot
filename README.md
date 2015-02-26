@@ -4,38 +4,46 @@ A simple IRC bot for #gbchat, the Gentleman Bastards fan channel. Remembers pron
 
 ## Installation
 
-TODO
+Download the jar from the releases page, or download the source and `lein run` or `lein uberjar`.
 
 ## Usage
 
-`lein run`. Connects and joins automatically. TODO: specify IRC info on command line.
+`lein run`. Connects and joins automatically, but this can be customized on the command line. See `lein run --help` for details.
 
 ## Roadmap
 
-- state persistence
 - trigger on privmsg events other than !command or <name>, command
-- proper command line parsing and configurable name/channel/network info
 - proper logging
 - remember per-user aliases
-- remember per-user spoilers
-- !set [k v & kvs] to set info
 - !alias [name] to mark current nick as an alias
-- !info [name] and 'Sharky, tell me about [name]' to get user info
 - !spoilers to get current spoiler level
 
- @Ariaste | "Sharky, there's a newbie"                                                         
- @Ariaste | "Sharky gently chomps the newbie and links them to the newbie's guide (LINK HERE)" 
+ @Ariaste | "Sharky, there's a newbie"
+ @Ariaste | "Sharky gently chomps the newbie and links them to the newbie's guide (LINK HERE)"
 
 /me pets sharky -> sharky purrs
 
 (triggers
-  (action "pets $N") purr
-  (action "sends $T for teeth lessons") eat
-  (command "eat") eat
-  (command "set") set
-  (command "info") info
-  (message "tell me about $T") info
-  ...)
+  (command "teeth") eat-victim
+  (command "eat")   eat-victim
+  (action "feeds * to the shark") eat-victim
+  (action "sends * for teeth lessons") eat-victim
+
+  (command "set")   set-fields
+  (command "info")  user-info
+  (message "<> tell me about *") user-info
+  (message "<> check the spoiler level") update-spoiler-level
+
+  (action "pets <>") purr
+
+  (command "alias") add-aliases
+  (command "unalias") rm-aliases
+
+  (raw "JOIN") on-join
+  (raw "PART") on-quit
+  (raw "QUIT") on-quit
+  @state)
+
 
 ## License
 
