@@ -24,15 +24,18 @@
 (defn reply [& text]
   (apply irc/reply *irc* *msg* text))
 
-(defn update-spoiler-level []
-  (let [target (*msg* :target)
-        names (keys (get-in @*irc* [:channels target :users]))
-        levels (set (map (fn [name] (:spoilers (get-user name))) names))
-        level (or (some levels books) @spoiler-level)]
-    (if (not= level @spoiler-level)
-      (do
-        (reply (str "The spoiler level is now " level "."))
-        (reset! spoiler-level level)))))
+(defn update-spoiler-level
+  ([] (update-spoiler-level false))
+  ([force-display]
+    (let [target (*msg* :target)
+          names (keys (get-in @*irc* [:channels target :users]))
+          levels (set (map (fn [name] (:spoilers (get-user name))) names))
+          level (or (some levels books) @spoiler-level)]
+      (println "Scanned " (count names) " users and decided on a spoiler level of " level)
+      (if (or force-display (not= level @spoiler-level))
+        (do
+          (reply (str "The spoiler level is now " level "."))
+          (reset! spoiler-level level))))))
 
 (defn eat-victim [victim]
   (prn "EAT" victim)
@@ -73,6 +76,7 @@
       ("teeth" "eat") (apply eat-victim args)
       "set" (apply set-fields nick args)
       "info" (apply user-info args)
+      "spoilers" (update-spoiler-level true)
       nil)))
 
 (defn on-irc [server msg]
