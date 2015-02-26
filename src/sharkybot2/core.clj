@@ -1,44 +1,13 @@
 (ns sharkybot2.core
-  (:require [irclj.core :as irc]
+  (:require [sharkybot2.state :refer :all]
+            [sharkybot2.flags :refer :all]
+            [irclj.core :as irc]
             [clojure.string :as string]
-            [clojure.tools.cli :as cli]
-            [clojure.tools.reader.edn :as edn]
-            [clojure.java.io :as io])
+            )
   (:gen-class))
 
-(def opts (atom nil))
-(defn getopt [key]
-  (-> @opts :options key))
-(def flags
-  [["-s" "--server HOST" "IRC server to connect to"
-    :default "irc.freenode.net"]
-   ["-p" "--port PORT" "Port number of IRC server"
-    :default 6667
-    :parse-fn #(Integer/parseInt %)
-    :validate [#(< 0 % 0x10000) "Must be a number between 0 and 65536"]]
-   ["-n" "--nick NICK" "Nickname to use on IRC"
-    :default "SharkyMcJaws"]
-   ["-j" "--join CHANNELS" "Comma-separated list of channels to join"
-    :default "#gbchat"]
-   ["-P" "--persistence FILE" "Save bot state in this file"
-    :default "sharky.edn"]])
-
-; :users { ToxicFrog { :pronouns :m :shark-time (datetime) :spoilers :RoT }}
-; :spoilers { :LoLL 0 :RSURS 0 :RoT 3 }
-(def state (atom {:users {}}))
 (def books ["none" "LoLL" "RSURS" "RoT"])
 (def spoiler-level (atom "RoT"))
-
-(defn save-state [state]
-  (println "Saving state:" (pr-str state))
-  (spit (getopt :persistence) (prn-str state)))
-
-(defn load-state []
-  (if (.exists (io/as-file (getopt :persistence)))
-    (do
-      (reset! state (edn/read-string (slurp (getopt :persistence))))
-      (println "Loading state:" (pr-str @state)))
-    (println "Skipping state load -- persistence file missing.")))
 
 (def ^:dynamic *irc* nil)
 (def ^:dynamic *msg* nil)
@@ -55,36 +24,23 @@
 (defn reply [& text]
   (apply irc/reply *irc* *msg* text))
 
-(defn get-user [nick]
-  (-> @state :users (get nick {})))
-
 (defn update-spoiler-level []
   (let [target (*msg* :target)
         names (keys (get-in @*irc* [:channels target :users]))
         levels (set (map (fn [name] (:spoilers (get-user name))) names))
         level (or (some levels books) @spoiler-level)]
-    (prn levels)
-    (prn level)
-    (prn @spoiler-level)
     (if (not= level @spoiler-level)
       (do
         (reply (str "The spoiler level is now " level "."))
-        (reset! spoiler-level level)))
-    @state))
-
-(defn update-user [nick k v]
-  (let [user (get-user nick)]
-    (assoc-in @state [:users nick k] v)))
+        (reset! spoiler-level level)))))
 
 (defn eat-victim [victim]
   (prn "EAT" victim)
-  (reply "ACTION drags" victim "beneath the waves, swimming around for a while before spitting" (pronoun victim) "mangled remains back out.")
-  @state)
+  (reply "ACTION drags" victim "beneath the waves, swimming around for a while before spitting" (pronoun victim) "mangled remains back out."))
 
 (defn user-info [nick & _]
   (if (get-user nick)
-    (do (reply (pr-str (get-user nick))) @state)
-    @state))
+    (do (reply (pr-str (get-user nick))) @state)))
 
 (defn keyify [kvs]
   (->> kvs
@@ -97,7 +53,8 @@
         (assoc-in @state [:users nick]
                   (apply assoc (get-user nick) (keyify kvs)))]
     (reply "Done.")
-    state'))
+    (update-state state')
+    (update-spoiler-level)))
 
 (defn to-command [text]
   (let [nick (:nick @*irc*)]
@@ -116,7 +73,7 @@
       ("teeth" "eat") (apply eat-victim args)
       "set" (apply set-fields nick args)
       "info" (apply user-info args)
-      @state)))
+      nil)))
 
 (defn on-irc [server msg]
   (let [{text :text
@@ -127,18 +84,13 @@
     (binding [*irc* server
               *msg* msg]
       (try
-        (let [state'
-              (case command
-                "PRIVMSG" (on-privmsg nick user text)
-                "JOIN"    (update-spoiler-level)
-                "PART"    (update-spoiler-level)
-                "QUIT"    (update-spoiler-level)
-                "366"     (update-spoiler-level)
-                @state)]
-          (if (not= @state state')
-            (do
-              (save-state state')
-              (reset! state state'))))
+        (case command
+          "PRIVMSG" (on-privmsg nick user text)
+          "JOIN"    (update-spoiler-level)
+          "PART"    (update-spoiler-level)
+          "QUIT"    (update-spoiler-level)
+          "366"     (update-spoiler-level)
+          nil)
         (catch Exception e
           (println "Error executing command:" text)
           (println "  >>" (.getMessage e)))))))
@@ -153,9 +105,9 @@
 
 (defn -main
   [& args]
-  (reset! opts (cli/parse-opts args flags))
-  (println @opts)
+  (parse-opts args)
   (load-state)
+  (println @opts)
   (let [port (getopt :port)
         host (getopt :server)
         nick (getopt :nick)
