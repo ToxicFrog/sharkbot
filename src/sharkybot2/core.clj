@@ -31,13 +31,19 @@
           names (keys (get-in @*irc* [:channels target :users]))
           levels (set (map (fn [name] (:spoilers (get-user name))) names))
           level (or (some levels books) @spoiler-level)]
-      (println "Scanned " (count names) " users and decided on a spoiler level of " level)
+      (println "Scanned" (pr-str names) "and decided on a spoiler level of " level)
       (if (or force-display (not= level @spoiler-level))
         (do
           (reply (str "The spoiler level is now " level "."))
           (reset! spoiler-level level))))))
 
-(defn eat-victim [victim]
+(defn spoilers-command [& _]
+  (update-spoiler-level true))
+
+(defn update-spoilers [& _]
+  (update-spoiler-level false))
+
+(defn eat-victim [capa victim & _]
   (prn "EAT" victim)
   (reply "ACTION drags" victim "beneath the waves, swimming around for a while before spitting" (pronoun victim) "mangled remains back out."))
 
@@ -59,45 +65,78 @@
     (update-state state')
     (update-spoiler-level)))
 
-(defn to-command [text]
-  (let [nick (:nick @*irc*)]
+(defn to-command [server text]
+  (let [nick (:nick @server)]
     (cond
+      (nil? text) [nil nil]
       (.startsWith text (str nick ", ")) (drop 1 (string/split text #"\s+")) ; Sharky, command args
       (.startsWith text "!") (-> text (subs 1) (string/split #"\s+")) ; !command args
-      :else [nil ""])))
+      :else [nil nil])))
 
-; should respond to both "!command args" and "Sharky2, command args"
-; and also specific trigger text like "/me throws %s to the sharks"
-; and "/me sends %s for teeth lessons"
-(defn on-privmsg [nick user text]
-  (let [[command & args] (to-command text)
-        args (map #(string/replace % #"[.!,;]" "") args)]
-    (case command
-      ("teeth" "eat") (apply eat-victim args)
-      "set" (apply set-fields nick args)
-      "info" (apply user-info args)
-      "spoilers" (update-spoiler-level true)
-      nil)))
+(defn parse-msg [server msg]
+  (let [[command & args] (to-command server (:text msg))]
+    (assoc msg
+      :bot-command command
+      :bot-args args)))
+
+(defn command
+  "True if *msg* is the given bot command."
+  [cmd]
+  (= cmd (:bot-command *msg*)))
+
+(defn action
+  "True if *msg* is a CTCP ACTION matching regex."
+  [regex]
+  false)
+
+(defn message
+  "True if *msg* is a channel message directed at the bot and matching regex"
+  [regex]
+  false)
+
+(defn raw
+  "True if the raw IRC command or numeric matches."
+  [cmd]
+  (= cmd (:command *msg*)))
+
+(defn call-handler [msg handler]
+  (if handler
+    (do (prn "Calling event handler" handler)
+      (apply handler (:nick msg) (:bot-args msg)))))
 
 (defn on-irc [server msg]
-  (let [{text :text
-         target :target
-         nick :nick
-         user :user
-         command :command} msg]
-    (binding [*irc* server
-              *msg* msg]
-      (try
-        (case command
-          "PRIVMSG" (on-privmsg nick user text)
-          "JOIN"    (update-spoiler-level)
-          "PART"    (update-spoiler-level)
-          "QUIT"    (update-spoiler-level)
-          "366"     (update-spoiler-level)
-          nil)
-        (catch Exception e
-          (println "Error executing command:" text)
-          (println "  >>" (.getMessage e)))))))
+  (binding [*irc* server
+            *msg* (parse-msg server msg)]
+    (try
+      (call-handler *msg* (cond
+        ; Teeth lessons
+        (command "teeth") eat-victim
+        (command "eat")   eat-victim
+        (action #"feeds (\S+) to the shark")      eat-victim
+        (action #"sends (\S+) for teeth lessons") eat-victim
+
+        ; User info
+        (command "set")   set-fields
+        (command "info")  user-info
+        (message #"tell me about (\S+)") user-info
+        ; (command "alias") add-aliases
+        ; (command "unalias") rm-aliases
+
+        ; Spoiler management
+        (command "spoilers") spoilers-command
+        (message #"check the spoiler level")  spoilers-command
+        (message #"what's the spoiler level") spoilers-command
+        (raw "JOIN") update-spoilers
+        (raw "PART") update-spoilers
+        (raw "QUIT") update-spoilers
+        (raw "366")  update-spoilers
+
+        ; Purring shark
+        ; (action (re-pattern (str "pets " (@opts :nick)))) purr
+        :else nil))
+      (catch Exception e
+        (println "Error executing command:" (:raw *msg*))
+        (println "  >>" (.getMessage e))))))
 
 (def callbacks
   {:privmsg on-irc
