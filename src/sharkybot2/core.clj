@@ -25,7 +25,9 @@
 
 ; :users { ToxicFrog { :pronouns :m :shark-time (datetime) :spoilers :RoT }}
 ; :spoilers { :LoLL 0 :RSURS 0 :RoT 3 }
-(def state (atom {:users {} :spoilers {}}))
+(def state (atom {:users {}}))
+(def books ["none" "LoLL" "RSURS" "RoT"])
+(def spoiler-level (atom "RoT"))
 
 (defn save-state [state]
   (println "Saving state:" (pr-str state))
@@ -53,36 +55,26 @@
 (defn reply [& text]
   (apply irc/reply *irc* *msg* text))
 
-(defn inc-spoilers [level]
-  @state)
-
-(defn dec-spoilers [level]
-  @state)
-
 (defn get-user [nick]
   (-> @state :users (get nick {})))
+
+(defn update-spoiler-level []
+  (let [target (*msg* :target)
+        names (keys (get-in @*irc* [:channels target :users]))
+        levels (set (map (fn [name] (:spoilers (get-user name))) names))
+        level (or (some levels books) @spoiler-level)]
+    (prn levels)
+    (prn level)
+    (prn @spoiler-level)
+    (if (not= level @spoiler-level)
+      (do
+        (reply (str "The spoiler level is now " level "."))
+        (reset! spoiler-level level)))
+    @state))
 
 (defn update-user [nick k v]
   (let [user (get-user nick)]
     (assoc-in @state [:users nick k] v)))
-
-; If the user has a spoiler level set, inc the spoiler refcount.
-; If this results in a lower spoiler level, report it.
-; If the user has an expired sharktimer, report that, clear the timer, and
-; save state.
-(defn on-join [nick user]
-  (prn (str nick "!" user) "JOIN")
-  (if-let [level ((get-user nick) :spoilers)]
-    (inc-spoilers level)
-    @state))
-
-; If the user has a spoiler level set, dec the spoiler refcount.
-; If this results in a higher spoiler level, report it.
-(defn on-quit [nick user]
-  (prn (str nick "!" user) "QUIT")
-  (if-let [level ((get-user nick) :spoilers)]
-    (dec-spoilers level)
-    @state))
 
 (defn eat-victim [victim]
   (prn "EAT" victim)
@@ -138,9 +130,10 @@
         (let [state'
               (case command
                 "PRIVMSG" (on-privmsg nick user text)
-                "JOIN"    (on-join nick user)
-                "PART"    (on-quit nick user)
-                "QUIT"    (on-quit nick user)
+                "JOIN"    (update-spoiler-level)
+                "PART"    (update-spoiler-level)
+                "QUIT"    (update-spoiler-level)
+                "366"     (update-spoiler-level)
                 @state)]
           (if (not= @state state')
             (do
@@ -152,12 +145,13 @@
 
 (def callbacks
   {:privmsg on-irc
-   :join on-irc
+   :join (fn [server msg] (on-irc server (assoc msg :target (-> msg :params first))))
    :part on-irc
-   :quit on-irc})
+   :quit on-irc
+   :366 (fn [server msg] (on-irc server (assoc msg :target (-> msg :params second))))
+   })
 
 (defn -main
-  "I don't do a whole lot ... yet."
   [& args]
   (reset! opts (cli/parse-opts args flags))
   (println @opts)
