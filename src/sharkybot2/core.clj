@@ -27,11 +27,11 @@
 (defn update-spoiler-level
   ([] (update-spoiler-level false))
   ([force-display]
-    (let [target (*msg* :target)
+    (let [target (*msg* :target) ; this does not work on QUIT because we don't know the target
           names (keys (get-in @*irc* [:channels target :users]))
           levels (set (map (fn [name] (:spoilers (get-user name))) names))
           level (or (some levels books) @spoiler-level)]
-      (println "Scanned" (pr-str names) "and decided on a spoiler level of " level)
+      (println "Scanned" (pr-str names) "and decided on a spoiler level of" level)
       (if (or force-display (not= level @spoiler-level))
         (do
           (reply (str "The spoiler level is now " level "."))
@@ -44,7 +44,6 @@
   (update-spoiler-level false))
 
 (defn eat-victim [capa victim & _]
-  (prn "EAT" victim)
   (reply "ACTION drags" victim "beneath the waves, swimming around for a while before spitting" (pronoun victim) "mangled remains back out."))
 
 (defn user-info [capa nick & _]
@@ -57,7 +56,6 @@
        (mapcat (fn [kv] [(keyword (first kv)) (second kv)]))))
 
 (defn set-fields [nick & kvs]
-  (prn "SET" nick (keyify kvs))
   (let [state'
         (assoc-in @state [:users nick]
                   (apply assoc (get-user nick) (keyify kvs)))]
@@ -66,7 +64,6 @@
     (update-spoiler-level)))
 
 (defn unset-fields [nick & ks]
-  (prn "UNSET" nick ks)
   (let [state' (update-in @state [:users nick] #(apply dissoc % (map keyword ks)))]
     (reply "Done.")
     (update-state state')
@@ -82,40 +79,54 @@
 
 (defn parse-msg [server msg]
   (let [[command & args] (to-command server (:text msg))]
-    (assoc msg
-      :bot-command command
-      :bot-args args)))
+    [command (or args[])]))
 
 (defn command
   "True if *msg* is the given bot command."
   [cmd]
-  (= cmd (:bot-command *msg*)))
+  (let [[msg-cmd args] (parse-msg *irc* *msg*)]
+    (if (= cmd msg-cmd)
+      args)))
 
 (defn action
   "True if *msg* is a CTCP ACTION matching regex."
   [regex]
-  false)
+  (and false
+    (= "ACTION" (:ctcp-kind *msg*))
+    (re-find regex (:ctcp-text *msg*))))
 
 (defn message
   "True if *msg* is a channel message directed at the bot and matching regex"
   [regex]
-  false)
+  (and false
+    (= "PRIVMSG" (:command *msg*))
+    (re-find regex (:text *msg*))))
 
 (defn raw
   "True if the raw IRC command or numeric matches."
   [cmd]
-  (= cmd (:command *msg*)))
+  (if (= cmd (:command *msg*))
+    []
+    false))
 
-(defn call-handler [msg handler]
-  (if handler
-    (do (prn "Calling event handler" handler)
-      (apply handler (:nick msg) (:bot-args msg)))))
+(defn find-handler [cond msg]
+  (cond))
+
+(defn call-handler [handler args]
+  (prn "CALL" handler args)
+  (apply handler (:nick *msg*) args))
+
+; Take a sequence of (matcher handler matcher handler ...)
+(defmacro handlers [& hs]
+  (let [hs (->> hs (partition 2) (mapcat (fn [[m h]] `((fn [] ~m) :>> (partial call-handler ~h)))))
+        expansion `(condp find-handler *msg* ~@hs nil)]
+    expansion))
 
 (defn on-irc [server msg]
   (binding [*irc* server
-            *msg* (parse-msg server msg)]
+            *msg* msg]
     (try
-      (call-handler *msg* (cond
+      (handlers
         ; Teeth lessons
         (command "teeth") eat-victim
         (command "eat")   eat-victim
@@ -141,13 +152,14 @@
 
         ; Purring shark
         ; (action (re-pattern (str "pets " (@opts :nick)))) purr
-        :else nil))
+        nil))
       (catch Exception e
         (println "Error executing command:" (:raw *msg*))
-        (println "  >>" (.getMessage e))))))
+        (println "  >>" (.getMessage e)))))
 
 (def callbacks
   {:privmsg on-irc
+   :ctcp-action on-irc
    :join (fn [server msg] (on-irc server (assoc msg :target (-> msg :params first))))
    :part on-irc
    :quit on-irc
@@ -163,7 +175,7 @@
         host (getopt :server)
         nick (getopt :nick)
         join (getopt :join)
-        _ (println (str "Connecting to" host ":" port " as " nick))
+        _ (println (str "Connecting to " host ":" port " as " nick))
         server (irc/connect host port nick :callbacks callbacks)]
     (println "Connected! Joining" join)
     (irc/join server join)
