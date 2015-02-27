@@ -172,6 +172,7 @@
 
         ; Purring shark
         (action (re-pattern (str "pets " (getopt :nick)))) purr
+        (command "hug") (fn [capa victim & _] (reply "\001ACTION nuzzles" victim "gently.\001"))
         nil))
       (catch Exception e
         (println "Error executing command:" (:raw *msg*))
