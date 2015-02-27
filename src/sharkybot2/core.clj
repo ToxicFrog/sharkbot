@@ -110,7 +110,6 @@
   [regex]
   (if (= "PRIVMSG" (:command *msg*))
     (do
-      (prn regex (:text *msg*) (getopt :nick))
       (let [m (re-matcher regex (:text *msg*))]
         (and (.startsWith (:text *msg*) (getopt :nick))
              (re-find m)
@@ -132,9 +131,8 @@
 
 ; Take a sequence of (matcher handler matcher handler ...)
 (defmacro handlers [& hs]
-  (let [hs (->> hs (partition 2) (mapcat (fn [[m h]] `((fn [] ~m) :>> (partial call-handler ~h)))))
-        expansion `(condp find-handler *msg* ~@hs nil)]
-    expansion))
+  (let [hs (->> hs (partition 2) (mapcat (fn [[m h]] `((fn [] ~m) :>> (partial call-handler ~h)))))]
+    `(condp find-handler *msg* ~@hs nil)))
 
 (defn on-irc [server msg]
   (binding [*irc* server
