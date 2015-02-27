@@ -47,7 +47,7 @@
   (prn "EAT" victim)
   (reply "ACTION drags" victim "beneath the waves, swimming around for a while before spitting" (pronoun victim) "mangled remains back out."))
 
-(defn user-info [nick & _]
+(defn user-info [capa nick & _]
   (if (get-user nick)
     (do (reply (pr-str (get-user nick))) @state)))
 
