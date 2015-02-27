@@ -167,7 +167,7 @@
         nil))
       (catch Exception e
         (println "Error executing command:" (:raw *msg*))
-        (print-stack-trace e))))
+        (trace/print-stack-trace e))))
 
 (def callbacks
   {:privmsg on-irc
