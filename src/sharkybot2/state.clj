@@ -17,9 +17,6 @@
       (println "Loading state:" (pr-str @state)))
     (println "Skipping state load -- persistence file missing.")))
 
-(defn get-user [nick]
-  (-> @state :users (get nick {})))
-
 (defn update-state [state']
   (if (not= @state state')
     (do

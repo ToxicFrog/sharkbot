@@ -1,36 +1,27 @@
 (ns sharkybot2.core
   (:require [sharkybot2.state :refer :all]
             [sharkybot2.flags :refer :all]
+            [sharkybot2.users :refer :all]
+            [sharkybot2.irc :refer :all]
             [irclj.core :as irc]
             [clojure.string :as string]
             [clojure.stacktrace :as trace]
             )
   (:gen-class))
 
+
+
+; Spoiler level control
+
 (def books ["none" "LoLL" "RSURS" "RoT"])
 (def spoiler-level (atom "RoT"))
-
-(def ^:dynamic *irc* nil)
-(def ^:dynamic *msg* nil)
-
-(defn pronoun [nick]
-  (-> @state
-      :users
-      (get nick {})
-      :pronouns
-      {:m "his" :f "her" :t "their"
-       "m" "his" "f" "her" "t" "their"}
-      (or "their")))
-
-(defn reply [& text]
-  (apply irc/reply *irc* *msg* text))
 
 (defn update-spoiler-level
   ([] (update-spoiler-level false))
   ([force-display]
-    (let [target (*msg* :target) ; this does not work on QUIT because we don't know the target
+    (let [target (or (*msg* :target) (getopt :join))
           names (keys (get-in @*irc* [:channels target :users]))
-          levels (set (map (fn [name] (:spoilers (get-user name))) names))
+          levels (->> names (map get-user) (map :spoilers) set)
           level (or (some levels books) @spoiler-level)]
       (println "Scanned" (pr-str names) "and decided on a spoiler level of" level)
       (if (or force-display (not= level @spoiler-level))
@@ -44,15 +35,33 @@
 (defn update-spoilers [& _]
   (update-spoiler-level false))
 
-(defn eat-victim [capa victim & _]
-  (reply "ACTION drags" victim "beneath the waves, swimming around for a while before spitting" (pronoun victim) "mangled remains back out."))
 
-(defn user-info [capa nick & _]
-  (if (get-user nick)
-    (do (reply (pr-str (get-user nick))) @state)))
+; Fun triggers
+
+(defn eat-victim [capa victim & _]
+  (reply "ACTION drags" (user-name victim)
+         "beneath the waves, swimming around for a while before spitting"
+         (pronoun victim) "mangled remains back out."))
 
 (defn purr [& _]
   (reply "ACTION purrs."))
+
+(defn newbie-intro [capa nick &]
+  (let [nick (if (empty? nick) "the newbie" nick)]
+    (reply "\001ACTION gently chomps" (user-name nick) "and links to the newbie guide: http://goo.gl/4f2p0T\001")))
+
+(defn hug [capa victim & _]
+  (reply "\001ACTION nuzzles" (user-name victim) "gently.\001"))
+
+
+; User info management
+
+(defn user-info [capa nick & _]
+  (let [info (get-user nick)]
+    (cond
+      (nil? info) nil
+      (empty? info) (reply "I have no knowledge of that person.")
+      :else (reply (str (canonical-name nick) ":") (pr-str (get-user nick))))))
 
 (defn keyify [kvs]
   (->> kvs
@@ -60,22 +69,30 @@
        (mapcat (fn [kv] [(keyword (first kv)) (second kv)]))))
 
 (defn set-fields [nick & kvs]
-  (let [state'
-        (assoc-in @state [:users nick]
-                  (apply assoc (get-user nick) (keyify kvs)))]
+  (let [update (dissoc (apply assoc {} (keyify kvs)) :aliases)
+        state' (update-user nick #(conj (or % {}) update))]
     (reply "Done.")
     (update-state state')
     (update-spoiler-level)))
 
 (defn unset-fields [nick & ks]
-  (let [state' (update-in @state [:users nick] #(apply dissoc % (map keyword ks)))]
+  (let [state' (update-user nick #(apply dissoc % (map keyword ks)))]
     (reply "Done.")
     (update-state state')
     (update-spoiler-level)))
 
-(defn newbie-intro [capa nick &]
-  (let [nick (if (empty? nick) "the newbie" nick)]
-    (reply "\001ACTION gently chomps" nick "and links to the newbie guide: http://goo.gl/4f2p0T\001")))
+(defn add-aliases [nick & aliases]
+  (let [state' (update-user nick #(assoc %1 :aliases (apply conj (or (:aliases %1) #{}) aliases)))]
+    (update-state state')
+    (reply "Done.")))
+
+(defn rm-aliases [nick & aliases]
+  (let [state' (update-user nick #(assoc %1 :aliases (apply disj (:aliases %1) aliases)))]
+    (update-state state')
+    (reply "Done.")))
+
+
+; Command parsing
 
 (defn to-command [server text]
   (let [nick (:nick @server)]
@@ -154,8 +171,8 @@
         (command "unset") unset-fields
         (command "info")  user-info
         (message #"tell me about (\S+)") user-info
-        ; (command "alias") add-aliases
-        ; (command "unalias") rm-aliases
+        (command "alias") add-aliases
+        (command "unalias") rm-aliases
 
         ; Spoiler management
         (command "spoilers") spoilers-command
@@ -172,7 +189,7 @@
 
         ; Purring shark
         (action (re-pattern (str "pets " (getopt :nick)))) purr
-        (command "hug") (fn [capa victim & _] (reply "\001ACTION nuzzles" victim "gently.\001"))
+        (command "hug") hug
         nil))
       (catch Exception e
         (println "Error executing command:" (:raw *msg*))
