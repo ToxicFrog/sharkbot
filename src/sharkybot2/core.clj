@@ -65,6 +65,13 @@
     (update-state state')
     (update-spoiler-level)))
 
+(defn unset-fields [nick & ks]
+  (prn "UNSET" nick ks)
+  (let [state' (update-in @state [:users nick] #(apply dissoc % (map keyword ks)))]
+    (reply "Done.")
+    (update-state state')
+    (update-spoiler-level)))
+
 (defn to-command [server text]
   (let [nick (:nick @server)]
     (cond
@@ -117,6 +124,7 @@
 
         ; User info
         (command "set")   set-fields
+        (command "unset") unset-fields
         (command "info")  user-info
         (message #"tell me about (\S+)") user-info
         ; (command "alias") add-aliases
