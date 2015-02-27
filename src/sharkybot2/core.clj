@@ -77,7 +77,7 @@
   (let [nick (:nick @server)]
     (cond
       (nil? text) [nil nil]
-      (.startsWith text (str nick ", ")) (drop 1 (string/split text #"\s+")) ; Sharky, command args
+      (.startsWith text nick) (drop 1 (string/split text #"\s+")) ; Sharky, command args
       (.startsWith text "!") (-> text (subs 1) (string/split #"\s+")) ; !command args
       :else [nil nil])))
 
