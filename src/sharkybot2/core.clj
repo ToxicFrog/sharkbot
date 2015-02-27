@@ -3,6 +3,7 @@
             [sharkybot2.flags :refer :all]
             [irclj.core :as irc]
             [clojure.string :as string]
+            [clojure.stacktrace :as trace]
             )
   (:gen-class))
 
@@ -50,6 +51,9 @@
   (if (get-user nick)
     (do (reply (pr-str (get-user nick))) @state)))
 
+(defn purr [& _]
+  (reply "ACTION purrs."))
+
 (defn keyify [kvs]
   (->> kvs
        (partition 2)
@@ -81,6 +85,11 @@
   (let [[command & args] (to-command server (:text msg))]
     [command (or args[])]))
 
+(defn groups [re str]
+  (let [m (re-matcher re str)]
+    (re-find m)
+    (drop 1 (re-groups m))))
+
 (defn command
   "True if *msg* is the given bot command."
   [cmd]
@@ -91,16 +100,21 @@
 (defn action
   "True if *msg* is a CTCP ACTION matching regex."
   [regex]
-  (and false
-    (= "ACTION" (:ctcp-kind *msg*))
-    (re-find regex (:ctcp-text *msg*))))
+  (if (= "ACTION" (:ctcp-kind *msg*))
+    (let [m (re-matcher regex (:ctcp-text *msg*))]
+      (and (re-find m)
+           (drop 1 (re-groups m))))))
 
 (defn message
   "True if *msg* is a channel message directed at the bot and matching regex"
   [regex]
-  (and false
-    (= "PRIVMSG" (:command *msg*))
-    (re-find regex (:text *msg*))))
+  (if (= "PRIVMSG" (:command *msg*))
+    (do
+      (prn regex (:text *msg*) (getopt :nick))
+      (let [m (re-matcher regex (:text *msg*))]
+        (and (.startsWith (:text *msg*) (getopt :nick))
+             (re-find m)
+             (drop 1 (re-groups m)))))))
 
 (defn raw
   "True if the raw IRC command or numeric matches."
@@ -151,11 +165,11 @@
         (raw "366")  update-spoilers
 
         ; Purring shark
-        ; (action (re-pattern (str "pets " (@opts :nick)))) purr
+        (action (re-pattern (str "pets " (getopt :nick)))) purr
         nil))
       (catch Exception e
         (println "Error executing command:" (:raw *msg*))
-        (println "  >>" (.getMessage e)))))
+        (print-stack-trace e))))
 
 (def callbacks
   {:privmsg on-irc
