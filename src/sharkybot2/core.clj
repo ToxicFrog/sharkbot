@@ -73,6 +73,10 @@
     (update-state state')
     (update-spoiler-level)))
 
+(defn newbie-intro [capa nick &]
+  (let [nick (if (empty? nick) "the newbie" nick)]
+    (reply "\001ACTION gently chomps" nick "and links to the newbie guide: http://goo.gl/4f2p0T\001")))
+
 (defn to-command [server text]
   (let [nick (:nick @server)]
     (cond
@@ -161,6 +165,10 @@
         (raw "PART") update-spoilers
         (raw "QUIT") update-spoilers
         (raw "366")  update-spoilers
+
+        ; Greeting
+        (message #"there's a newbie()") newbie-intro
+        (message #"(\S+) is a newbie") newbie-intro
 
         ; Purring shark
         (action (re-pattern (str "pets " (getopt :nick)))) purr
