@@ -4,7 +4,7 @@
             [clojure.tools.reader.edn :as edn]
             ))
 
-(def state (atom {:users {}}))
+(def state (atom {:users {} :memory {}}))
 
 (defn save-state []
   (println "Saving state:" (pr-str @state))

@@ -92,6 +92,23 @@
     (reply "Done.")))
 
 
+; Memory
+
+(defn remember-info [capa key & vs]
+  (let [k (-> key .toLowerCase keyword)]
+    (if (empty? vs)
+      (reply (str key ":") (get-in @state [:memory k]))
+      (let [state' (assoc-in @state [:memory k] (string/join " " vs))]
+        (update-state state')
+        (reply "Remembered.")))))
+
+(defn forget-info [capa k]
+  (let [k (-> k .toLowerCase keyword)
+        state' (update-in @state [:memory] #(dissoc % k))]
+    (update-state state')
+    (reply "Forgotten.")))
+
+
 ; Command parsing
 
 (defn to-command [server text]
@@ -173,6 +190,10 @@
         (message #"tell me about (\S+)") user-info
         (command "alias") add-aliases
         (command "unalias") rm-aliases
+
+        ; Memory
+        (command "remember") remember-info
+        (command "forget") forget-info
 
         ; Spoiler management
         (command "spoilers") spoilers-command
