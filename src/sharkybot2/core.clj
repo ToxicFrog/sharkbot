@@ -50,8 +50,9 @@
   (let [nick (if (empty? nick) "the newbie" nick)]
     (reply "\001ACTION gently chomps" (user-name nick) "and links to the newbie guide: http://goo.gl/4f2p0T\001")))
 
-(defn hug [capa victim & _]
-  (reply "\001ACTION nuzzles" (user-name victim) "gently.\001"))
+(defn hug [capa & args]
+  (let [victim (first args)]
+    (reply "\001ACTION nuzzles" (user-name (if (empty? victim) capa victim)) "gently.\001")))
 
 
 ; User info management
@@ -209,8 +210,9 @@
         (message #"(\S+) is a newbie") newbie-intro
 
         ; Purring shark
-        (action (re-pattern (str "pets " (getopt :nick)))) purr
+        (action (re-pattern (str "(?i)pets " (getopt :nick)))) purr
         (command "hug") hug
+        (action (re-pattern (str "(?i)()hugs " (getopt :nick)))) hug
         nil))
       (catch Exception e
         (println "Error executing command:" (:raw *msg*))
