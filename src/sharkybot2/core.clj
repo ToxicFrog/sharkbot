@@ -4,6 +4,7 @@
             [sharkybot2.users :refer :all]
             [sharkybot2.irc :refer :all]
             [irclj.core :as irc]
+            [irclj.connection :refer [write-irc-line]]
             [clojure.string :as string]
             [clojure.stacktrace :as trace]
             )
@@ -35,6 +36,11 @@
 (defn update-spoilers [& _]
   (update-spoiler-level false))
 
+(defn rescan-users [& _]
+  (dosync (alter *irc*
+                 assoc-in [:channels (getopt :join) :users] {}
+                 ))
+  (write-irc-line *irc* "NAMES" (getopt :join)))
 
 ; Fun triggers
 
@@ -202,7 +208,7 @@
         (message #"what's the spoiler level") spoilers-command
         (raw "JOIN") update-spoilers
         (raw "PART") update-spoilers
-        (raw "QUIT") update-spoilers
+        (raw "QUIT") rescan-users
         (raw "366")  update-spoilers
 
         ; Greeting
