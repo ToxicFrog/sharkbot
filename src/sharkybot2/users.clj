@@ -22,7 +22,6 @@
   [nick]
   (let [userinfo (-> @state :users (get nick))
         aliased (->> @state :users (filter #(-> % second :aliases (contains? nick))) (map first))]
-    (prn "asked for" nick "got" (count aliased) userinfo aliased)
     (cond
       userinfo userinfo
       (= 1 (count aliased)) (get-user (first aliased))

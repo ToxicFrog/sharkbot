@@ -180,6 +180,7 @@
     `(condp find-handler *msg* ~@hs nil)))
 
 (defn on-irc [server msg]
+  (println (:raw msg))
   (binding [*irc* server
             *msg* msg]
     (try
@@ -222,7 +223,9 @@
         nil))
       (catch Exception e
         (println "Error executing command:" (:raw *msg*))
-        (trace/print-stack-trace e))))
+        (trace/print-stack-trace e)
+        (println "")
+        )))
 
 (def callbacks
   {:privmsg on-irc
