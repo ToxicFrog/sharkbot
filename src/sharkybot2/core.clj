@@ -115,6 +115,8 @@
     (update-state state')
     (reply "Forgotten.")))
 
+(defn memories [capa]
+  (reply "Memories:" (-> @state :memory keys pr-str)))
 
 ; Command parsing
 
@@ -202,6 +204,7 @@
         ; Memory
         (command "remember") remember-info
         (command "forget") forget-info
+        (command "memories") memories
 
         ; Spoiler management
         (command "spoilers") spoilers-command
