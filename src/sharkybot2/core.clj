@@ -120,13 +120,18 @@
 
 ; Command parsing
 
+(defn name-prefixed [text]
+  (when (not (nil? text))
+    (let [names (getopt :nick)
+          text (.toLowerCase text)]
+      (some #(.startsWith text %) (map #(.toLowerCase %) names)))))
+
 (defn to-command [server text]
-  (let [nick (:nick @server)]
-    (cond
-      (nil? text) [nil nil]
-      (.startsWith text nick) (drop 1 (string/split text #"\s+")) ; Sharky, command args
-      (.startsWith text "!") (-> text (subs 1) (string/split #"\s+")) ; !command args
-      :else [nil nil])))
+  (cond
+    (nil? text) [nil nil]
+    (name-prefixed text) (drop 1 (string/split text #"\s+")) ; Sharky, command args
+    (.startsWith text "!") (-> text (subs 1) (string/split #"\s+")) ; !command args
+    :else [nil nil]))
 
 (defn parse-msg [server msg]
   (let [[command & args] (to-command server (:text msg))]
@@ -158,7 +163,7 @@
   (if (= "PRIVMSG" (:command *msg*))
     (do
       (let [m (re-matcher regex (:text *msg*))]
-        (and (.startsWith (:text *msg*) (getopt :nick))
+        (and (name-prefixed (:text *msg*))
              (re-find m)
              (drop 1 (re-groups m)))))))
 
@@ -220,9 +225,11 @@
         (message #"(\S+) is a newbie") newbie-intro
 
         ; Purring shark
-        (action (re-pattern (str "(?i)pets " (getopt :nick)))) purr
+        (action (re-pattern (str "(?i)pets " (nick-re)))) purr
+        (action (re-pattern (str "(?i)pets sharky"))) purr
         (command "hug") hug
-        (action (re-pattern (str "(?i)()hugs " (getopt :nick)))) hug
+        (action (re-pattern (str "(?i)()hugs " (nick-re)))) hug
+        (action (re-pattern (str "(?i)()hugs sharky"))) hug
         nil))
       (catch Exception e
         (println "Error executing command:" (:raw *msg*))
@@ -246,7 +253,7 @@
   (println @opts)
   (let [port (getopt :port)
         host (getopt :server)
-        nick (getopt :nick)
+        nick (first (getopt :nick))
         join (getopt :join)
         _ (println (str "Connecting to " host ":" port " as " nick))
         server (irc/connect host port nick :callbacks callbacks)]

@@ -1,5 +1,6 @@
 (ns sharkybot2.flags
-  (:require [clojure.tools.cli :as cli]))
+  (:require [clojure.tools.cli :as cli]
+            [clojure.string :as string]))
 
 (def opts (atom nil))
 (defn getopt [key]
@@ -11,12 +12,19 @@
     :default 6667
     :parse-fn #(Integer/parseInt %)
     :validate [#(< 0 % 0x10000) "Must be a number between 0 and 65536"]]
-   ["-n" "--nick NICK" "Nickname to use on IRC"
-    :default "SharkyMcJaws"]
-   ["-j" "--join CHANNELS" "Comma-separated list of channels to join"
+   ["-n" "--nick NICKS" "Comma separated list of names to recognize; first will be used as IRC nick"
+    :default ["SharkyMcJaws" "sharky"]
+    :parse-fn #(string/split % #",")]
+   ["-j" "--join CHANNEL" "IRC channel to join"
     :default "#gbchat"]
    ["-P" "--persistence FILE" "Save bot state in this file"
     :default "sharky.edn"]])
 
 (defn parse-opts [args]
   (reset! opts (cli/parse-opts args flags)))
+
+(defn nick []
+  (first (getopt :nick)))
+
+(defn nick-re []
+  (->> (getopt :nick) (map #(.toLowerCase %)) (interpose "|") (apply str)))
