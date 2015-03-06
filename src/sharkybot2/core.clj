@@ -3,14 +3,13 @@
             [sharkybot2.flags :refer :all]
             [sharkybot2.users :refer :all]
             [sharkybot2.irc :refer :all]
+            [sharkybot2.triggers :refer :all]
             [irclj.core :as irc]
             [irclj.connection :refer [write-irc-line]]
             [clojure.string :as string]
             [clojure.stacktrace :as trace]
             )
   (:gen-class))
-
-
 
 ; Spoiler level control
 
@@ -30,13 +29,23 @@
           (reply (str "The spoiler level is now " level "."))
           (reset! spoiler-level level))))))
 
-(defn spoilers-command [& _]
+(deftriggers show-spoiler-level [& _]
+  "Explicitly check and show the spoiler level."
+  [(command "spoilers")
+   (message #"check the spoiler level")
+   (message #"what's the spoiler level")]
   (update-spoiler-level true))
 
-(defn update-spoilers [& _]
+(deftriggers check-spoiler-level [& _]
+  "Automatically check the spoiler level and show an update only if it changed."
+  [(raw "JOIN")
+   (raw "PART")
+   (raw "366")]
   (update-spoiler-level false))
 
-(defn rescan-users [& _]
+(deftriggers rescan-users [& _]
+  "Force a rescan of the user list."
+  [(raw "QUIT")]
   (dosync (alter *irc*
                  assoc-in [:channels (getopt :join) :users] {}
                  ))
@@ -44,26 +53,43 @@
 
 ; Fun triggers
 
-(defn eat-victim [capa victim & _]
+(deftriggers eat-victim [capa victim & args]
+  "Send someone for teeth lessons."
+  [(command "teeth")
+   (command "eat")
+   (action #"feeds (\S+) to the shark")
+   (action #"sends (\S+) for teeth lessons")]
   (reply "ACTION drags" (user-name victim)
          "beneath the waves, swimming around for a while before spitting"
          (pronoun victim) "mangled remains back out."))
 
-(defn purr [& _]
+(deftriggers purr [& _]
+  "It's a purring shark."
+  [(action (re-pattern (str "(?i)pets " (nick-re))))]
   (reply "ACTION purrs."))
 
-(defn newbie-intro [capa nick &]
-  (let [nick (if (empty? nick) "the newbie" nick)]
+(deftriggers greet-newbie [capa & args]
+  "Link a newbie to the newbie guide."
+  [(command "newbie")
+   (message #"there's a newbie()")
+   (message #"(\S+) is a newbie")]
+  (let [nick (if (empty? args) "the newbie" (first args))]
     (reply "\001ACTION gently chomps" (user-name nick) "and links to the newbie guide: http://goo.gl/4f2p0T\001")))
 
-(defn hug [capa & args]
+(deftriggers hug [capa & args]
+  "Hug the shark! It's safe!"
+  [(command "hug")
+   (action (re-pattern (str "(?i)()hugs " (nick-re))))]
   (let [victim (first args)]
     (reply "\001ACTION nuzzles" (user-name (if (empty? victim) capa victim)) "gently.\001")))
 
 
 ; User info management
 
-(defn user-info [capa nick & _]
+(deftriggers info [capa nick & _]
+  "Show information about a user."
+  [(command "info")
+   (message #"tell me about (\S+)")]
   (let [info (get-user nick)]
     (cond
       (nil? info) nil
@@ -75,25 +101,33 @@
        (partition 2)
        (mapcat (fn [kv] [(keyword (first kv)) (second kv)]))))
 
-(defn set-fields [nick & kvs]
+(deftriggers set [nick & kvs]
+  "Set user info."
+  [(command "set")]
   (let [update (dissoc (apply assoc {} (keyify kvs)) :aliases)
         state' (update-user nick #(conj (or % {}) update))]
     (reply "Done.")
     (update-state state')
     (update-spoiler-level)))
 
-(defn unset-fields [nick & ks]
+(deftriggers unset [nick & ks]
+  "Clear user info."
+  [(command "unset")]
   (let [state' (update-user nick #(apply dissoc % (map keyword ks)))]
     (reply "Done.")
     (update-state state')
     (update-spoiler-level)))
 
-(defn add-aliases [nick & aliases]
+(deftriggers alias [nick & aliases]
+  "Add aliases."
+  [(command "alias")]
   (let [state' (update-user nick #(assoc %1 :aliases (apply conj (or (:aliases %1) #{}) aliases)))]
     (update-state state')
     (reply "Done.")))
 
-(defn rm-aliases [nick & aliases]
+(deftriggers unalias [nick & aliases]
+  "Remove aliases."
+  [(command "unalias")]
   (let [state' (update-user nick #(assoc %1 :aliases (apply disj (:aliases %1) aliases)))]
     (update-state state')
     (reply "Done.")))
@@ -101,7 +135,9 @@
 
 ; Memory
 
-(defn remember-info [capa key & vs]
+(deftriggers remember [capa key & vs]
+  "Remember a new fact, or show an old one."
+  [(command "remember")]
   (let [k (-> key .toLowerCase keyword)]
     (if (empty? vs)
       (reply (str key ":") (get-in @state [:memory k]))
@@ -109,133 +145,18 @@
         (update-state state')
         (reply "Remembered.")))))
 
-(defn forget-info [capa k]
-  (let [k (-> k .toLowerCase keyword)
-        state' (update-in @state [:memory] #(dissoc % k))]
+(deftriggers forget [capa key & _]
+  "Forget a remembered fact."
+  [(command "forget")]
+  (let [key (-> key .toLowerCase keyword)
+        state' (update-in @state [:memory] #(dissoc % key))]
     (update-state state')
     (reply "Forgotten.")))
 
-(defn memories [capa]
+(deftriggers memories [capa & _]
+  "List the shark's memories."
+  [(command "memories")]
   (reply "Memories:" (-> @state :memory keys pr-str)))
-
-; Command parsing
-
-(defn name-prefixed [text]
-  (when (not (nil? text))
-    (let [names (getopt :nick)
-          text (.toLowerCase text)]
-      (some #(.startsWith text %) (map #(.toLowerCase %) names)))))
-
-(defn to-command [server text]
-  (cond
-    (nil? text) [nil nil]
-    (name-prefixed text) (drop 1 (string/split text #"\s+")) ; Sharky, command args
-    (.startsWith text "!") (-> text (subs 1) (string/split #"\s+")) ; !command args
-    :else [nil nil]))
-
-(defn parse-msg [server msg]
-  (let [[command & args] (to-command server (:text msg))]
-    [command (or args[])]))
-
-(defn groups [re str]
-  (let [m (re-matcher re str)]
-    (re-find m)
-    (drop 1 (re-groups m))))
-
-(defn command
-  "True if *msg* is the given bot command."
-  [cmd]
-  (let [[msg-cmd args] (parse-msg *irc* *msg*)]
-    (if (= cmd msg-cmd)
-      args)))
-
-(defn action
-  "True if *msg* is a CTCP ACTION matching regex."
-  [regex]
-  (if (= "ACTION" (:ctcp-kind *msg*))
-    (let [m (re-matcher regex (:ctcp-text *msg*))]
-      (and (re-find m)
-           (drop 1 (re-groups m))))))
-
-(defn message
-  "True if *msg* is a channel message directed at the bot and matching regex"
-  [regex]
-  (if (= "PRIVMSG" (:command *msg*))
-    (do
-      (let [m (re-matcher regex (:text *msg*))]
-        (and (name-prefixed (:text *msg*))
-             (re-find m)
-             (drop 1 (re-groups m)))))))
-
-(defn raw
-  "True if the raw IRC command or numeric matches."
-  [cmd]
-  (if (= cmd (:command *msg*))
-    []
-    false))
-
-(defn find-handler [cond msg]
-  (cond))
-
-(defn call-handler [handler args]
-  (prn "CALL" handler args)
-  (apply handler (:nick *msg*) args))
-
-; Take a sequence of (matcher handler matcher handler ...)
-(defmacro handlers [& hs]
-  (let [hs (->> hs (partition 2) (mapcat (fn [[m h]] `((fn [] ~m) :>> (partial call-handler ~h)))))]
-    `(condp find-handler *msg* ~@hs nil)))
-
-(defn on-irc [server msg]
-  (println (:raw msg))
-  (binding [*irc* server
-            *msg* msg]
-    (try
-      (handlers
-        ; Teeth lessons
-        (command "teeth") eat-victim
-        (command "eat")   eat-victim
-        (action #"feeds (\S+) to the shark")      eat-victim
-        (action #"sends (\S+) for teeth lessons") eat-victim
-
-        ; User info
-        (command "set")   set-fields
-        (command "unset") unset-fields
-        (command "info")  user-info
-        (message #"tell me about (\S+)") user-info
-        (command "alias") add-aliases
-        (command "unalias") rm-aliases
-
-        ; Memory
-        (command "remember") remember-info
-        (command "forget") forget-info
-        (command "memories") memories
-
-        ; Spoiler management
-        (command "spoilers") spoilers-command
-        (message #"check the spoiler level")  spoilers-command
-        (message #"what's the spoiler level") spoilers-command
-        (raw "JOIN") update-spoilers
-        (raw "PART") update-spoilers
-        (raw "QUIT") rescan-users
-        (raw "366")  update-spoilers
-
-        ; Greeting
-        (message #"there's a newbie()") newbie-intro
-        (message #"(\S+) is a newbie") newbie-intro
-
-        ; Purring shark
-        (action (re-pattern (str "(?i)pets " (nick-re)))) purr
-        (action (re-pattern (str "(?i)pets sharky"))) purr
-        (command "hug") hug
-        (action (re-pattern (str "(?i)()hugs " (nick-re)))) hug
-        (action (re-pattern (str "(?i)()hugs sharky"))) hug
-        nil))
-      (catch Exception e
-        (println "Error executing command:" (:raw *msg*))
-        (trace/print-stack-trace e)
-        (println "")
-        )))
 
 (def callbacks
   {:privmsg on-irc
