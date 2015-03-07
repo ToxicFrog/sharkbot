@@ -2,6 +2,10 @@
 
 A simple IRC bot for #gbchat, the Gentleman Bastards fan channel. Remembers pronouns and spoiler levels and eats people.
 
+![kickin' rad shark portrait](https://raw.githubusercontent.com/ToxicFrog/sharkbot/master/sharky.png)
+
+(Thanks to [Korbinnian Rittinger](http://korvidian.tumblr.com) for the drawing.)
+
 ## Installation
 
 None needed, just download and run. State is stored in `sharky.edn` in PWD by default.
@@ -77,5 +81,6 @@ Provides a link to the newbie guide, optionally directed at a specific person.
 ## License
 
 Copyright © 2015 Ben 'ToxicFrog' Kelly
+SharkyMcJaws drawing © 2015 Korbinnian Rittinger
 
 Released under the MIT license; see the LICENSE file for details.
