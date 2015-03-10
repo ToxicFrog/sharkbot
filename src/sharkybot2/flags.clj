@@ -27,4 +27,6 @@
   (first (getopt :nick)))
 
 (defn nick-re []
-  (->> (getopt :nick) (map #(.toLowerCase %)) (interpose "|") (apply str)))
+  (str "("
+    (->> (getopt :nick) (map #(.toLowerCase %)) (interpose "|") (apply str))
+    ")"))
