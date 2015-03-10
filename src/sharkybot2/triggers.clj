@@ -64,6 +64,15 @@
              (re-find m)
              (drop 1 (re-groups m)))))))
 
+(defn say
+  "True if *msg* is a channel message matching regex. Produces an arg for each capture."
+  [regex]
+  (if (= "PRIVMSG" (:command *msg*))
+    (do
+      (let [m (re-matcher regex (:text *msg*))]
+        (when (re-find m)
+          (drop 1 (re-groups m)))))))
+
 (defn raw
   "True if the raw IRC command or numeric matches. Produces no args."
   [cmd]

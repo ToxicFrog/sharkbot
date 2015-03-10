@@ -36,3 +36,9 @@
    (action (re-pattern (str "(?i)()hugs " (nick-re))))]
   (let [victim (first args)]
     (reply "\001ACTION nuzzles" (user-name (if (empty? victim) capa victim)) "gently.\001")))
+
+(deftriggers thanks [capa & _]
+  "Sharky should do something when you thank him."
+  [(say (re-pattern (str "^(?i)(thanks|thank you|thank u).+" (nick-re))))
+   (message "(thanks|thank you|thank u)")]
+  (reply "\001ACTION bloops.\001"))
