@@ -75,8 +75,8 @@ Provides a link to the newbie guide, optionally directed at a specific person.
   <Ariaste> Sharky chomps (thing) enthusiastically.
   <booty> Sharky plays with his food. Good sharky.
   <semirose> SharkyMcJaws swims alongside brother/sister of the lady of the long silence
-- respond to "sharky" as well as "SharkyMcJaws"
 - multichannel support
+- react to people saying "chum"
 
 ## License
 
