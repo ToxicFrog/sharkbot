@@ -72,7 +72,6 @@
     false))
 
 (defn on-irc [server msg]
-  (println (:raw msg))
   (binding [*irc* server
             *msg* msg]
     (try
@@ -80,8 +79,9 @@
                            (let [words (trigger)]
                              (when words [words handler])))
             [args handler] (some find-handler @command-triggers)]
-        (prn "CALL" handler args)
         (when handler
+          (prn "RAW " (:raw msg))
+          (prn "CALL" handler args)
           (apply handler (:nick *msg*) args)))
       (catch Exception e
         (println "Error executing command:" (:raw *msg*))
