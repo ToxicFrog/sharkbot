@@ -11,8 +11,8 @@
   "Send someone for teeth lessons."
   [(command "teeth")
    (command "eat")
-   (action #"feeds (\S+) to the shark")
-   (action #"sends (\S+) for teeth lessons")]
+   (action #"feeds (.*) to the shark")
+   (action #"sends (.*) for teeth lessons")]
   (reply "ACTION drags" (user-name victim)
          "beneath the waves, swimming around for a while before spitting"
          (pronoun victim) "mangled remains back out."))
