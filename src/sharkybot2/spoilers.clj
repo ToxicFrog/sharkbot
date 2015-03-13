@@ -8,16 +8,26 @@
 
 ; Spoiler level control
 
-(def ^:private books ["none" "LoLL" "RSURS" "RoT"])
 (def ^:private spoiler-level (atom "RoT"))
+(def ^:private books
+  [["NO SPOILERS" #{"none" "nothing" "no"}]
+   ["Lies of Locke Lamora" #{"lies" "loll" "tloll"}]
+   ["Red Seas Under Red Skies" #{"seas" "rsurs"}]
+   ["Republic of Thieves" #{"republic" "rot" "trot"}]
+   ])
+
+(defn- level-to-book-name [level]
+  (some (fn [[book levels]]
+          (when (levels (.toLowerCase level)) book))
+        books))
 
 (defn update-spoiler-level
   ([] (update-spoiler-level false))
   ([force-display]
     (let [target (or (*msg* :target) (getopt :join))
           names (keys (get-in @*irc* [:channels target :users]))
-          levels (->> names (map get-user) (map :spoilers) set)
-          level (or (some levels books) @spoiler-level)]
+          levels (->> names (map get-user) (map :spoilers) (filter identity) (map level-to-book-name) set)
+          level (or (some levels (map first books)) @spoiler-level)]
       (println "Scanned" (pr-str names) "and decided on a spoiler level of" level)
       (if (or force-display (not= level @spoiler-level))
         (do
