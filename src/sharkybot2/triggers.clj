@@ -91,7 +91,11 @@
         (when handler
           (prn "RAW " (:raw msg))
           (prn "CALL" handler args)
-          (apply handler (:nick *msg*) args)))
+          ; Call handler with two arguments:
+          ; the name of the person who initiated the message (may be nil in the case of e.g. server numerics)
+          ; the processed message; for command/raw this is the result of splitting on whitespace, for regex-based
+          ; triggers this is the set of groups
+          (handler (:nick *msg*) args)))
       (catch Exception e
         (println "Error executing command:" (:raw *msg*))
         (trace/print-stack-trace e)

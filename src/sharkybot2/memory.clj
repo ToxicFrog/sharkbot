@@ -8,7 +8,7 @@
 
 ; Memory
 
-(deftriggers remember [capa key & vs]
+(deftriggers remember [capa [key & vs]]
   "Remember a new fact, or show an old one."
   [(command "remember")]
   (let [k (-> key .toLowerCase keyword)]
@@ -18,7 +18,7 @@
         (update-state state')
         (reply "Remembered.")))))
 
-(deftriggers forget [capa key & _]
+(deftriggers forget [capa [key]]
   "Forget a remembered fact."
   [(command "forget")]
   (let [key (-> key .toLowerCase keyword)

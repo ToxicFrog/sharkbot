@@ -9,7 +9,7 @@
 
 ; User info management
 
-(deftriggers info [capa nick & _]
+(deftriggers info [capa [nick]]
   "Show information about a user."
   [(command "info")
    (message #"tell me about (\S+)")]
@@ -24,7 +24,7 @@
        (partition 2)
        (mapcat (fn [kv] [(keyword (first kv)) (second kv)]))))
 
-(deftriggers set [nick & kvs]
+(deftriggers set [nick kvs]
   "Set user info."
   [(command "set")]
   (let [update (dissoc (apply assoc {} (keyify kvs)) :aliases)
@@ -33,7 +33,7 @@
     (update-state state')
     (update-spoiler-level)))
 
-(deftriggers unset [nick & ks]
+(deftriggers unset [nick ks]
   "Clear user info."
   [(command "unset")]
   (let [state' (update-user nick #(apply dissoc % (map keyword ks)))]
@@ -41,14 +41,14 @@
     (update-state state')
     (update-spoiler-level)))
 
-(deftriggers alias [nick & aliases]
+(deftriggers alias [nick aliases]
   "Add aliases."
   [(command "alias")]
   (let [state' (update-user nick #(assoc %1 :aliases (apply conj (or (:aliases %1) #{}) aliases)))]
     (update-state state')
     (reply "Done.")))
 
-(deftriggers unalias [nick & aliases]
+(deftriggers unalias [nick aliases]
   "Remove aliases."
   [(command "unalias")]
   (let [state' (update-user nick #(assoc %1 :aliases (apply disj (:aliases %1) aliases)))]

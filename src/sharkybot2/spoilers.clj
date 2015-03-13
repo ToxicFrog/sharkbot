@@ -24,21 +24,21 @@
           (reply (str "The spoiler level is now " level "."))
           (reset! spoiler-level level))))))
 
-(deftriggers show-spoiler-level [& _]
+(deftriggers show-spoiler-level [_ _]
   "Explicitly check and show the spoiler level."
   [(command "spoilers")
    (message #"check the spoiler level")
    (message #"what's the spoiler level")]
   (update-spoiler-level true))
 
-(deftriggers check-spoiler-level [& _]
+(deftriggers check-spoiler-level [_ _]
   "Automatically check the spoiler level and show an update only if it changed."
   [(raw "JOIN")
    (raw "PART")
    (raw "366")]
   (update-spoiler-level false))
 
-(deftriggers rescan-users [& _]
+(deftriggers rescan-users [_ _]
   "Force a rescan of the user list."
   [(raw "QUIT")]
   (dosync (alter *irc*
