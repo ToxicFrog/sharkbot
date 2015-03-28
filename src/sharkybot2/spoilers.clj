@@ -15,6 +15,7 @@
    ["Lies of Locke Lamora" #{"lies" "loll" "tloll"}]
    ["Red Seas Under Red Skies" #{"seas" "rsurs"}]
    ["Republic of Thieves" #{"republic" "rot" "trot"}]
+   ["Thorn of Emberlain" #{"thorn" "toe"}]
    ])
 
 (defn- level-to-book-name [level]
