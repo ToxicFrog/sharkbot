@@ -4,6 +4,7 @@
     [sharkybot2.irc :refer :all]
     [sharkybot2.flags :refer [getopt]]
     [sharkybot2.triggers :refer :all]
+    [clojure.string :as string]
     ))
 
 ; Spoiler level control
@@ -27,11 +28,15 @@
     (let [target (or (*msg* :target) (getopt :join))
           names (keys (get-in @*irc* [:channels target :users]))
           levels (->> names (map get-user) (map :spoilers) (filter identity) (map level-to-book-name) set)
-          level (or (some levels (map first books)) @spoiler-level)]
+          level (or (some levels (map first books)) @spoiler-level)
+          topic (get-in @*irc* [:channels target :topic :text])
+          new-topic (string/replace (or topic "") #"CURRENT SPOILER LEVEL: .*" (str "CURRENT SPOILER LEVEL: \002" level "\002"))]
       (println "Scanned" (pr-str names) "and decided on a spoiler level of" level)
       (if (or force-display (not= level @spoiler-level))
         (do
-          (reply (str "The spoiler level is now " level "."))
+          (reply (str "The spoiler level is now \002" level "\002."))
+          (when (and (not= topic new-topic) (not (empty? new-topic)))
+            (send-irc "TOPIC" target (str ":" new-topic)))
           (reset! spoiler-level level))))))
 
 (deftriggers show-spoiler-level [_ _]
