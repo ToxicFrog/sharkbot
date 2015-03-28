@@ -2,8 +2,9 @@
   (:require
     [sharkybot2.users :refer :all]
     [sharkybot2.irc :refer :all]
-    [sharkybot2.triggers :refer :all]
-    ))
+    [sharkybot2.triggers :refer :all])
+  (:import
+    [java.util.Date]))
 
 ; Fun triggers
 
@@ -42,3 +43,14 @@
   [(say (re-pattern (str "^(?i)(thanks|thank you|thank u).+" (nick-re))))
    (message #"(thanks|thank you|thank u)")]
   (reply "\001ACTION bloops.\001"))
+
+(def ^:private last-chum (atom (java.util.Date.)))
+(deftriggers chum [_ _]
+  "Sharky gets really excited about chum."
+  [(say #"(?i)chum")]
+  (let [now (java.util.Date.)
+        since (/ (- (.getTime now) (.getTime @last-chum)) 1000)]
+    (prn @last-chum now since (> since 90))
+    (when (> since 90)
+      (reset! last-chum now)
+      (reply "\001ACTION swims around and wags its tail, eager and hungry.\001"))))
