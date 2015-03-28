@@ -10,7 +10,6 @@
     sharkybot2.memory
     sharkybot2.amusements
     [irclj.core :as irc]
-    [clojure.string :as string]
     )
   (:gen-class))
 

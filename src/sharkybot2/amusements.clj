@@ -26,7 +26,8 @@
   "Link a newbie to the newbie guide."
   [(command "newbie")
    (message #"there's a newbie")
-   (message #"(\S+) is a newbie")]
+   (message #"(\S+) is a newbie")
+   (message #"^\S+ (.*) are newbies")]
   (let [nick (or newbie "the newbie")]
     (reply "\001ACTION gently chomps" (user-name nick) "and links to the newbie guide: http://goo.gl/4f2p0T\001")))
 
@@ -34,7 +35,7 @@
   "Hug the shark! It's safe!"
   [(command "hug")
    (action (re-pattern (str "(?i)hugs " (nick-re))))]
-    (reply "\001ACTION nuzzles" (user-name (or victim capa)) "gently.\001"))
+  (reply "\001ACTION nuzzles" (user-name (or victim capa)) "gently.\001"))
 
 (deftriggers thanks [capa _]
   "Sharky should do something when you thank him."
