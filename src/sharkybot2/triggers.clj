@@ -23,21 +23,22 @@
           text (.toLowerCase text)]
       (some #(.startsWith text %) (map #(.toLowerCase %) names)))))
 
-(defn to-command [server text]
+(defn- to-command [server text]
   (cond
     (nil? text) [nil nil]
     (name-prefixed text) (drop 1 (string/split text #"\s+")) ; Sharky, command args
     (.startsWith text "!") (-> text (subs 1) (string/split #"\s+")) ; !command args
     :else [nil nil]))
 
-(defn parse-msg [server msg]
+(defn- parse-msg [server msg]
   (let [[command & args] (to-command server (:text msg))]
     [command (or args [])]))
 
-(defn groups [re str]
-  (let [m (re-matcher re str)]
-    (re-find m)
-    (drop 1 (re-groups m))))
+(defn args-from-matcher [m]
+  (cond
+    (not (re-find m))     nil
+    (= 0 (.groupCount m)) []
+    :else                 (drop 1 (re-groups m))))
 
 (defn command
   "True if *msg* is the given bot command. Produces one arg per word following the command."
@@ -51,8 +52,7 @@
   [regex]
   (if (= "ACTION" (:ctcp-kind *msg*))
     (let [m (re-matcher regex (:ctcp-text *msg*))]
-      (and (re-find m)
-           (drop 1 (re-groups m))))))
+      (args-from-matcher m))))
 
 (defn message
   "True if *msg* is a channel message directed at the bot and matching regex. Produces an arg for each capture."
@@ -61,8 +61,7 @@
     (do
       (let [m (re-matcher regex (:text *msg*))]
         (and (name-prefixed (:text *msg*))
-             (re-find m)
-             (drop 1 (re-groups m)))))))
+             (args-from-matcher m))))))
 
 (defn say
   "True if *msg* is a channel message matching regex. Produces an arg for each capture."
@@ -70,8 +69,7 @@
   (if (= "PRIVMSG" (:command *msg*))
     (do
       (let [m (re-matcher regex (:text *msg*))]
-        (when (re-find m)
-          (drop 1 (re-groups m)))))))
+        (args-from-matcher m)))))
 
 (defn raw
   "True if the raw IRC command or numeric matches. Produces no args."
