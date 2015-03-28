@@ -6,15 +6,16 @@
             )
   (:gen-class))
 
-(def command-triggers (atom []))
+(def command-triggers (atom {}))
 (def help-topics (atom {}))
 
 (defmacro deftriggers [name args help-text triggers & body]
   (let [triggers (mapv (fn [t] `(fn [] ~t)) triggers)]
+    (println "Registering action" name "with" (count triggers) "triggers.")
     `(let [~name (fn ~args
                    ~@body)]
-       (reset! command-triggers (into @command-triggers
-                                        (mapv (fn [f#] [f# ~name]) ~triggers)))
+       (reset! command-triggers (assoc @command-triggers (str '~name)
+                                  (mapv (fn [f#] [f# ~name]) ~triggers)))
        )))
 
 (defn name-prefixed [text]
@@ -85,7 +86,7 @@
       (let [find-handler (fn [[trigger handler]]
                            (let [words (trigger)]
                              (when words [words handler])))
-            [args handler] (some find-handler @command-triggers)]
+            [args handler] (->> @command-triggers vals (apply concat) (some find-handler))]
         (when handler
           (prn "RAW " (:raw msg))
           (prn "CALL" handler args)
@@ -100,3 +101,15 @@
         (println "")
         ))))
 
+(deftriggers hot-reload [capa modules]
+  "Reload all user triggers."
+  [(command "hot-reload")]
+  (if (and ((getopt :admin) capa) (not (empty? modules)))
+    (do
+      (apply println "Admin hot-reload requested of modules:" modules)
+      (apply require :reload (map #(symbol (str "sharkybot2." %)) modules)))
+    (do
+      (println "Hot-reload requested, reloading event handlers.")
+      (require :reload
+               '(sharkybot2 userinfo spoilers memory amusements core)))
+    ))

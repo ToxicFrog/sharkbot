@@ -1,5 +1,6 @@
 (ns sharkybot2.core
   (:require
+    [clojure.pprint :refer [pprint]]
     [sharkybot2.state :refer :all]
     [sharkybot2.flags :refer :all]
     [sharkybot2.users :refer :all]
@@ -13,6 +14,7 @@
     )
   (:gen-class))
 
+
 (def callbacks
   {:privmsg on-irc
    :ctcp-action on-irc
@@ -20,13 +22,14 @@
    :part on-irc
    :quit on-irc
    :366 (fn [server msg] (on-irc server (assoc msg :target (-> msg :params second))))
+   ;:raw-log (fn [server dir raw] (println ({:read "<< " :write ">> "} dir) raw))
    })
 
 (defn -main
   [& args]
   (parse-opts args)
   (load-state)
-  (println @opts)
+  (pprint @opts)
   (let [port (getopt :port)
         host (getopt :server)
         nick (first (getopt :nick))

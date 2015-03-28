@@ -17,6 +17,9 @@
     :parse-fn #(string/split % #",")]
    ["-j" "--join CHANNEL" "IRC channel to join"
     :default "#gbchat"]
+   ["-a" "--admin USER,..." "Names of users to recognize as administrators"
+    :default #{"ToxicFrog"}
+    :parse-fn #(set (string/split % #","))]
    ["-P" "--persistence FILE" "Save bot state in this file"
     :default "sharky.edn"]])
 
