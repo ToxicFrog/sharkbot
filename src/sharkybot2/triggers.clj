@@ -81,7 +81,9 @@
 
 (defn on-irc [server msg]
   (binding [*irc* server
-            *msg* msg]
+            *msg* (if (= (:nick @server) (:target msg))
+                    (assoc msg :target (:nick msg))
+                    msg)]
     (try
       (let [find-handler (fn [[trigger handler]]
                            (let [words (trigger)]
