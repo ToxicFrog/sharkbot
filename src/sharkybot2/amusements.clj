@@ -8,6 +8,14 @@
 
 ; Fun triggers
 
+(let [A (into #{} "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+      Am (->> (cycle A) (drop 26) (take 52) (zipmap A))
+      rot13 (fn [s] (apply str (map #(Am % %) s)))]
+  (deftriggers rot13 [capa args]
+    "ROT13 a string"
+    [(command "rot13")]
+    (apply reply (map rot13 args))))
+
 (deftriggers eat-victim [capa [victim]]
   "Send someone for teeth lessons."
   [(command "teeth")
