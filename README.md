@@ -12,11 +12,40 @@ None needed, just download and run. State is stored in `sharky.edn` in PWD by de
 
 ## Startup
 
-    lein run -- [--server irc.freenode.net] [--port 6667] [--join #gbchat] [--nick SharkyMcJaws] [--persistence ./sharky.edn]
+    lein run --
+        [--server irc.freenode.net]
+        [--port 6667]
+        [--join #gbchat]
+        [--nick SharkyMcJaws,sharky]
+        [--persistence ./sharky.edn]
+        [--admin Alice,Bob]
+        [--modules amusements,userinfo,spoilers,memory]
 
-Supported options with their defaults are shown.
+Supported options with example values are shown. There is also a `--help` option that displays a brief help text.
 
 There is currently no support for joining multiple channels. You can do it by comma-separating the argument to `--join`, but the bot will misbehave badly if you do.
+
+    --server SERVER
+    --port PORT
+    --join CHANNEL
+
+Specifies the server and port to connect to and the channel to join.
+
+    --nick FOO,BAR,...
+
+Comma-separated list of names. The first one will be used as the bot's IRC name (and it will error if it can't claim that name). The other names are alternate names it will respond to when addressed using them in channel.
+
+    --persistence FILE
+
+Path to the persistence file to store user info and memories in.
+
+    --admin NAME,NAME,...
+
+Comma-separated list of names to act as administrators. At the moment all this does is give those people the ability to use the hot-reload command to reload specific modules. It may do more in the future.
+
+    --modules MODULE,MODULE,...
+
+List of modules (from `src/sharkbot/modules`) to load at startup, or when told to hot-reload by a non-admin user. The default is to load all modules.
 
 ## Usage
 
@@ -34,7 +63,9 @@ Send someone for teeth lessons.
     !set key value [key value ...]
     !unset key [key ...]
 
-Set or clear user-specific info, as in `!set name Ben pronouns m spoilers RoT country Canada tz EST`, or `!unset name`.
+Set or clear user-specific info, as in `!set name Ben pronouns m spoilers RoT country Canada tz EST`, or `!unset name`. This can't be used to set aliases; see `!alias` and `!unalias` for that.
+
+The bot will understand `pronouns` (which should be `t`, `f`, or `m`), `name`, and `spoilers`; other fields are recorded purely for informational purposes.
 
     !info <person>
     SharkyMcJaws, tell me about <person>
@@ -48,9 +79,10 @@ Record aliases. When asked about these aliases the bot will respond as though as
 
     !remember key text...
     !remember key
+    !remember
     !forget key
 
-Remember or forget `text` as associated with `key`. Without `text`, display the previously remembered text.
+Remember or forget `text` as associated with `key`. Without `text`, display the previously remembered text. With no `key`, list the keys of all the bot's memories.
 
     !spoilers
     SharkyMcJaws, check the spoiler level
@@ -64,11 +96,18 @@ Check the spoiler level. This is normally handled automatically based on what us
 
 Provides a link to the newbie guide, optionally directed at a specific person.
 
+    !hot-reload
+    !hot-reload <modules>
+
+Reload modules without restarting the bot.
+
+When used without arguments, or by non-admins, reload all feature modules specified on the command line. When passed arguments by an admin, reload exactly those modules; these should be Clojure module paths without the leading `sharkbot.` prefix, so `!hot-reload triggers modules.memory` to reload the main triggers library and the memory feature module.
+
+Note for admins: reloading `triggers` will reset the trigger table, disabling all features. It's recommended to do an unqualified `hot-reload` afterwards to reload the feature modules as well.
 
 ## Roadmap
 
 - proper logging
-- book synonyms and case insensitivity
 - random text for !eat, see suggestions
   <Ariaste> "Sharky nibbles (thing) inquisitively, then spits it out. He gives you a disgusted look and swims away."
   <booty> Sharky eats [instert thing] and gets indigestion. You gave sharky tummy. You should feel bad about your life and choices
@@ -76,7 +115,6 @@ Provides a link to the newbie guide, optionally directed at a specific person.
   <booty> Sharky plays with his food. Good sharky.
   <semirose> SharkyMcJaws swims alongside brother/sister of the lady of the long silence
 - multichannel support
-- react to people saying "chum"
 
 ## License
 
