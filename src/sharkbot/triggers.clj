@@ -103,18 +103,24 @@
         (println "")
         ))))
 
+(defn reload-modules [modules]
+  (apply require :reload (map symbol modules)))
+
 (deftriggers hot-reload [capa modules]
   "Reload all user triggers."
   [(command "hot-reload")]
   (try
     (if (and ((getopt :admin) capa) (not (empty? modules)))
+      ; If passed extra arguments and invoked by an admin, the arguments are expected
+      ; to be the names of modules to reload without the leading sharkbot. prefix.
+      ; e.g. !hot-reload triggers modules.amusements modules.memory
       (do
         (apply println "Admin hot-reload requested of modules:" modules)
-        (apply require :reload (map #(symbol (str "sharkbot." %)) modules)))
+        (reload-modules (map (partial str "sharkbot.") modules)))
+      ; Otherwise, reload the modules listed on the command line. Don't reload the triggers module.
       (do
         (println "Hot-reload requested, reloading event handlers.")
-        (require :reload
-                 '(sharkbot triggers userinfo spoilers memory amusements)))
+        (reload-modules (map (partial str "sharkbot.modules.") (getopt :modules))))
     )
     (reply "\001ACTION stares at you from the water, its eyes glowing briefly as it absorbs new instructions.\001")
     (catch Exception e

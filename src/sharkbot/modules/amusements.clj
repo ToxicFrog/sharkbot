@@ -1,8 +1,10 @@
-(ns sharkbot.core
+(ns sharkbot.modules.amusements
   (:require
-    [sharkbot.users :refer :all]
+    [sharkbot.flags :refer [nick-re]]
     [sharkbot.irc :refer :all]
-    [sharkbot.triggers :refer :all])
+    [sharkbot.triggers :refer :all]
+    [sharkbot.users :refer :all]
+    )
   (:import
     [java.util.Date]))
 

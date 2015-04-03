@@ -6,10 +6,6 @@
     [sharkbot.users :refer :all]
     [sharkbot.irc :refer :all]
     [sharkbot.triggers :refer :all]
-    sharkbot.userinfo
-    sharkbot.spoilers
-    sharkbot.memory
-    sharkbot.amusements
     [irclj.core :as irc]
     )
   (:gen-class))
@@ -40,6 +36,7 @@
     (println (:summary @opts))
     (System/exit 0))
   (load-state)
+  (reload-modules (map (partial str "sharkbot.modules.") (getopt :modules)))
   (let [port (getopt :port)
         host (getopt :server)
         nick (first (getopt :nick))

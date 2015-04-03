@@ -22,6 +22,9 @@
     :parse-fn #(set (string/split % #","))]
    ["-P" "--persistence FILE" "Save bot state in this file"
     :default "sharky.edn"]
+   ["-m", "--modules" "Comma-separated list of modules to load"
+    :default #{"amusements" "memory" "spoilers" "userinfo"}
+    :parse-fn #(set (string/split % #","))]
    ["-h" "--help" "Display help"]])
 
 (defn parse-opts [args]

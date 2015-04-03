@@ -1,4 +1,4 @@
-(ns sharkbot.spoilers
+(ns sharkbot.modules.spoilers
   (:require
     [sharkbot.users :refer :all]
     [sharkbot.irc :refer :all]

@@ -1,4 +1,4 @@
-(ns sharkbot.memory
+(ns sharkbot.modules.memory
   (:require
     [sharkbot.state :refer :all]
     [sharkbot.irc :refer :all]

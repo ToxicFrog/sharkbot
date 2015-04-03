@@ -1,10 +1,10 @@
-(ns sharkbot.userinfo
+(ns sharkbot.modules.userinfo
   (:require
     [sharkbot.state :refer :all]
     [sharkbot.users :refer :all]
     [sharkbot.irc :refer :all]
     [sharkbot.triggers :refer :all]
-    [sharkbot.spoilers :refer [update-spoiler-level]]
+    [sharkbot.modules.spoilers :refer [update-spoiler-level]]
     ))
 
 ; User info management
