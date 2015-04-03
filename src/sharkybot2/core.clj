@@ -36,8 +36,10 @@
 (defn -main
   [& args]
   (parse-opts args)
+  (when (getopt :help)
+    (println (:summary @opts))
+    (System/exit 0))
   (load-state)
-  (pprint @opts)
   (let [port (getopt :port)
         host (getopt :server)
         nick (first (getopt :nick))

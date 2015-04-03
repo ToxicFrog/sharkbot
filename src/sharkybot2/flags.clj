@@ -21,7 +21,8 @@
     :default #{"ToxicFrog"}
     :parse-fn #(set (string/split % #","))]
    ["-P" "--persistence FILE" "Save bot state in this file"
-    :default "sharky.edn"]])
+    :default "sharky.edn"]
+   ["-h" "--help" "Display help"]])
 
 (defn parse-opts [args]
   (reset! opts (cli/parse-opts args flags)))
