@@ -14,15 +14,20 @@
     )
   (:gen-class))
 
+; We define this trivial function here so that we can hot-reload triggers and pick up
+; the new definition of on-irc.
+(defn dispatch [& args]
+  (apply on-irc args))
+
 
 (def callbacks
-  {:privmsg on-irc
-   :ctcp-action on-irc
-   :join (fn [server msg] (on-irc server (assoc msg :target (-> msg :params first))))
-   :part on-irc
-   :quit on-irc
-   :366 (fn [server msg] (on-irc server (assoc msg :target (-> msg :params second))))
    ;:raw-log (fn [server dir raw] (println ({:read "<< " :write ">> "} dir) raw))
+  {:privmsg dispatch
+   :ctcp-action dispatch
+   :join (fn [server msg] (dispatch server (assoc msg :target (-> msg :params first))))
+   :part dispatch
+   :quit dispatch
+   :366 (fn [server msg] (dispatch server (assoc msg :target (-> msg :params second))))
    })
 
 (defn -main

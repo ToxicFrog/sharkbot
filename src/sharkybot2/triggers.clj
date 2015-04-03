@@ -91,7 +91,7 @@
             [args handler] (->> @command-triggers vals (apply concat) (some find-handler))]
         (when handler
           (prn "RAW " (:raw msg))
-          (prn "CALL" handler args)
+          (prn "CALL" handler (:nick *msg*) args)
           ; Call handler with two arguments:
           ; the name of the person who initiated the message (may be nil in the case of e.g. server numerics)
           ; the processed message; for command/raw this is the result of splitting on whitespace, for regex-based
@@ -106,12 +106,19 @@
 (deftriggers hot-reload [capa modules]
   "Reload all user triggers."
   [(command "hot-reload")]
-  (if (and ((getopt :admin) capa) (not (empty? modules)))
-    (do
-      (apply println "Admin hot-reload requested of modules:" modules)
-      (apply require :reload (map #(symbol (str "sharkybot2." %)) modules)))
-    (do
-      (println "Hot-reload requested, reloading event handlers.")
-      (require :reload
-               '(sharkybot2 userinfo spoilers memory amusements core)))
-    ))
+  (try
+    (if (and ((getopt :admin) capa) (not (empty? modules)))
+      (do
+        (apply println "Admin hot-reload requested of modules:" modules)
+        (apply require :reload (map #(symbol (str "sharkybot2." %)) modules)))
+      (do
+        (println "Hot-reload requested, reloading event handlers.")
+        (require :reload
+                 '(sharkybot2 triggers userinfo spoilers memory amusements)))
+    )
+    (reply "\001ACTION stares at you from the water, its eyes glowing briefly as it absorbs new instructions.\001")
+    (catch Exception e
+      (reply "Error reloading modules, see logs for details.")
+      (trace/print-stack-trace e)
+      (println ""))
+))
