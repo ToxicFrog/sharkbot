@@ -1,4 +1,4 @@
-# sharkybot2
+# sharkbot
 
 A simple IRC bot for #gbchat, the Gentleman Bastards fan channel. Remembers pronouns and spoiler levels and eats people.
 

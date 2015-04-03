@@ -1,4 +1,4 @@
-(ns sharkybot2.flags
+(ns sharkbot.flags
   (:require [clojure.tools.cli :as cli]
             [clojure.string :as string]))
 

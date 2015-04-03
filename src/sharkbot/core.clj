@@ -1,15 +1,15 @@
-(ns sharkybot2.core
+(ns sharkbot.core
   (:require
     [clojure.pprint :refer [pprint]]
-    [sharkybot2.state :refer :all]
-    [sharkybot2.flags :refer :all]
-    [sharkybot2.users :refer :all]
-    [sharkybot2.irc :refer :all]
-    [sharkybot2.triggers :refer :all]
-    sharkybot2.userinfo
-    sharkybot2.spoilers
-    sharkybot2.memory
-    sharkybot2.amusements
+    [sharkbot.state :refer :all]
+    [sharkbot.flags :refer :all]
+    [sharkbot.users :refer :all]
+    [sharkbot.irc :refer :all]
+    [sharkbot.triggers :refer :all]
+    sharkbot.userinfo
+    sharkbot.spoilers
+    sharkbot.memory
+    sharkbot.amusements
     [irclj.core :as irc]
     )
   (:gen-class))

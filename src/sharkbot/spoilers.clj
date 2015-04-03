@@ -1,9 +1,9 @@
-(ns sharkybot2.spoilers
+(ns sharkbot.spoilers
   (:require
-    [sharkybot2.users :refer :all]
-    [sharkybot2.irc :refer :all]
-    [sharkybot2.flags :refer [getopt]]
-    [sharkybot2.triggers :refer :all]
+    [sharkbot.users :refer :all]
+    [sharkbot.irc :refer :all]
+    [sharkbot.flags :refer [getopt]]
+    [sharkbot.triggers :refer :all]
     [clojure.string :as string]
     ))
 

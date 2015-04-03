@@ -1,4 +1,4 @@
-(ns sharkybot2.irc
+(ns sharkbot.irc
   (:require
     [irclj.core :as irc]
     [irclj.connection :refer [write-irc-line]]

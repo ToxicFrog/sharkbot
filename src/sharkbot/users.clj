@@ -1,7 +1,7 @@
-(ns sharkybot2.users
-  (:require [sharkybot2.flags :refer :all]
-            [sharkybot2.state :refer :all]
-            [sharkybot2.irc :refer :all]
+(ns sharkbot.users
+  (:require [sharkbot.flags :refer :all]
+            [sharkbot.state :refer :all]
+            [sharkbot.irc :refer :all]
             [clojure.string :as string]
             ))
 

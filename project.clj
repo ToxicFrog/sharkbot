@@ -1,4 +1,4 @@
-(defproject sharkybot2 "0.1.0-SNAPSHOT"
+(defproject sharkbot "0.1.0-SNAPSHOT"
   :description "Sends people for teeth lessons."
   :url "irc://irc.freenode.net/gbchat"
   :license {:name "MIT License"
@@ -7,4 +7,4 @@
                  [irclj "0.5.0-alpha4"]
                  [org.clojure/tools.cli "0.3.1"]
                  [org.clojure/tools.reader "0.8.15"]]
-  :main sharkybot2.core)
+  :main sharkbot.core)

@@ -1,8 +1,8 @@
-(ns sharkybot2.triggers
+(ns sharkbot.triggers
   (:require [clojure.string :as string]
             [clojure.stacktrace :as trace]
-            [sharkybot2.flags :refer :all]
-            [sharkybot2.irc :refer :all]
+            [sharkbot.flags :refer :all]
+            [sharkbot.irc :refer :all]
             )
   (:gen-class))
 
@@ -110,11 +110,11 @@
     (if (and ((getopt :admin) capa) (not (empty? modules)))
       (do
         (apply println "Admin hot-reload requested of modules:" modules)
-        (apply require :reload (map #(symbol (str "sharkybot2." %)) modules)))
+        (apply require :reload (map #(symbol (str "sharkbot." %)) modules)))
       (do
         (println "Hot-reload requested, reloading event handlers.")
         (require :reload
-                 '(sharkybot2 triggers userinfo spoilers memory amusements)))
+                 '(sharkbot triggers userinfo spoilers memory amusements)))
     )
     (reply "\001ACTION stares at you from the water, its eyes glowing briefly as it absorbs new instructions.\001")
     (catch Exception e

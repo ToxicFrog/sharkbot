@@ -1,5 +1,5 @@
-(ns sharkybot2.state
-  (:require [sharkybot2.flags :refer :all]
+(ns sharkbot.state
+  (:require [sharkbot.flags :refer :all]
             [clojure.java.io :as io]
             [clojure.tools.reader.edn :as edn]
             ))

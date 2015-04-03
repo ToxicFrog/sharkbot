@@ -1,8 +1,8 @@
-(ns sharkybot2.memory
+(ns sharkbot.memory
   (:require
-    [sharkybot2.state :refer :all]
-    [sharkybot2.irc :refer :all]
-    [sharkybot2.triggers :refer :all]
+    [sharkbot.state :refer :all]
+    [sharkbot.irc :refer :all]
+    [sharkbot.triggers :refer :all]
     [clojure.string :as string]
     ))
 

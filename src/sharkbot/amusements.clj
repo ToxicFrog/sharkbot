@@ -1,8 +1,8 @@
-(ns sharkybot2.core
+(ns sharkbot.core
   (:require
-    [sharkybot2.users :refer :all]
-    [sharkybot2.irc :refer :all]
-    [sharkybot2.triggers :refer :all])
+    [sharkbot.users :refer :all]
+    [sharkbot.irc :refer :all]
+    [sharkbot.triggers :refer :all])
   (:import
     [java.util.Date]))
 
