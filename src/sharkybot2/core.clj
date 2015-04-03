@@ -19,15 +19,18 @@
 (defn dispatch [& args]
   (apply on-irc args))
 
+(defn raw-log [server dir raw]
+  (when (= :write dir)
+    (println ">>" raw)))
 
 (def callbacks
-   ;:raw-log (fn [server dir raw] (println ({:read "<< " :write ">> "} dir) raw))
   {:privmsg dispatch
    :ctcp-action dispatch
    :join (fn [server msg] (dispatch server (assoc msg :target (-> msg :params first))))
    :part dispatch
    :quit dispatch
    :366 (fn [server msg] (dispatch server (assoc msg :target (-> msg :params second))))
+   :raw-log raw-log
    })
 
 (defn -main
