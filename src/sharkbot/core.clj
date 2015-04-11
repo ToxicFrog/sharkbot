@@ -16,7 +16,8 @@
   (apply on-irc args))
 
 (defn raw-log [server dir raw]
-  (when (= :write dir)
+  (when (and (= :write dir)
+             (not (.startsWith raw "PONG :")))
     (println ">>" raw)))
 
 (def callbacks
@@ -40,9 +41,6 @@
   (let [port (getopt :port)
         host (getopt :server)
         nick (first (getopt :nick))
-        join (getopt :join)
         _ (println (str "Connecting to " host ":" port " as " nick))
         server (irc/connect host port nick :callbacks callbacks)]
-    (println "Connected! Joining" join)
-    (irc/join server join)
-    (println "Done.")))
+    (irc/join server (getopt :join))))
