@@ -20,6 +20,11 @@
              (not (.startsWith raw "PONG :")))
     (println ">>" raw)))
 
+(defn die [& args]
+  (println "Something went wrong, exiting")
+  (prn args)
+  (System/exit 1))
+
 (def callbacks
   {:privmsg dispatch
    :ctcp-action dispatch
@@ -28,6 +33,8 @@
    :quit dispatch
    :366 (fn [server msg] (dispatch server (assoc msg :target (-> msg :params second))))
    :raw-log raw-log
+   :on-shutdown die
+   :on-exception die
    })
 
 (defn -main
@@ -43,4 +50,7 @@
         nick (first (getopt :nick))
         _ (println (str "Connecting to " host ":" port " as " nick))
         server (irc/connect host port nick :callbacks callbacks)]
+    ; HACK HACK HACK
+    ; enable keepalive on the socket, otherwise if it times out we never notice and the bot just hangs
+    (-> @server :connection :socket (.setKeepAlive true))
     (irc/join server (getopt :join))))
