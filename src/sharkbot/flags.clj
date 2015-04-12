@@ -23,7 +23,7 @@
    ["-P" "--persistence FILE" "Save bot state in this file"
     :default "sharky.edn"]
    ["-m", "--modules" "Comma-separated list of modules to load"
-    :default #{"amusements" "memory" "spoilers" "userinfo"}
+    :default #{"amusements" "memory" "spoilers" "userinfo" "admin"}
     :parse-fn #(set (string/split % #","))]
    ["-h" "--help" "Display help"]])
 
