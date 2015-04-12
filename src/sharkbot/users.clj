@@ -30,12 +30,24 @@
                               nil)
       :else {})))
 
+(def ^:private pronoun-map
+  {:male #{"m" "male" "he" "him"}
+   :female #{"f" "female" "she" "her"}
+   :neuter #{"t" "they" "them"}
+   :robot #{"it" "robot"}})
+
+(defn- setting-to-gender [setting]
+  (or
+    (some (fn [[k v]] (when (v setting) k)) pronoun-map)
+    :neuter))
+
 ; Returns the preferred posessive pronoun of the user. Defaults to "their".
 (defn pronoun [nick]
   (-> (get-user nick)
       :pronouns
-      {"m" "his" "f" "her" "t" "their"}
-      (or "their")))
+      .toLowerCase
+      setting-to-gender
+      {:male "his" :female "her" :neuter "their" :robot "its"}))
 
 ; Returns the preferred name of the given user. If the user is unknown or
 ; has no preferred name, returns nick.
