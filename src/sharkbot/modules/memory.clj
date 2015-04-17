@@ -12,7 +12,7 @@
   "Remember a new fact, or show an old one."
   [(command "remember")]
   (if (nil? key)
-    (reply "Memories:" (-> @state :memory keys pr-str))
+    (apply reply "Memories:" (->> @state :memory keys (map name) sort))
     (let [k (-> key .toLowerCase keyword)]
       (if (empty? vs)
         (reply (str key ":") (get-in @state [:memory k]))
