@@ -44,7 +44,7 @@
 ; Returns the preferred posessive pronoun of the user. Defaults to "their".
 (defn pronoun [nick]
   (-> (get-user nick)
-      :pronouns
+      (get :pronouns "t")
       .toLowerCase
       setting-to-gender
       {:male "his" :female "her" :neuter "their" :robot "its"}))
