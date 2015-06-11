@@ -54,7 +54,7 @@
    (message #"(thanks|thank you|thank u)")]
   (reply "\001ACTION bloops.\001"))
 
-(def ^:private last-chum (atom (java.util.Date.)))
+(def ^:private last-chum (atom (java.util.Date. 0)))
 (deftriggers chum [_ _]
   "Sharky gets really excited about chum."
   [(say #"(?i)chum")]
