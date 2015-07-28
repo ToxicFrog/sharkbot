@@ -115,6 +115,7 @@ Note for admins: reloading `triggers` will reset the trigger table, disabling al
   <booty> Sharky plays with his food. Good sharky.
   <semirose> SharkyMcJaws swims alongside brother/sister of the lady of the long silence
 - multichannel support
+- support regexes in (command) triggers for e.g. (command #"spoilers\?*")
 
 ## License
 
