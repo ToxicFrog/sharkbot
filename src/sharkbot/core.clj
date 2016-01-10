@@ -39,7 +39,11 @@
 
 (defn -main
   [& args]
-  (parse-opts args)
+  (when-let [errors (parse-opts args)]
+    (println (clojure.string/join "\n" errors))
+    (println (:summary @opts))
+    (System/exit 1))
+  (println (:errors @opts))
   (when (getopt :help)
     (println (:summary @opts))
     (System/exit 0))

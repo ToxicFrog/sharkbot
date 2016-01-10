@@ -28,7 +28,8 @@
    ["-h" "--help" "Display help"]])
 
 (defn parse-opts [args]
-  (reset! opts (cli/parse-opts args flags)))
+  (reset! opts (cli/parse-opts args flags))
+  (:errors @opts))
 
 (defn nick []
   (first (getopt :nick)))
