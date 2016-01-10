@@ -30,7 +30,8 @@
 
 (deftriggers purr [_ _]
   "It's a purring shark."
-  [(action (re-pattern (str "(?i)pets " (nick-re))))]
+  [(action (re-pattern (str "(?i)pets " (nick-re))))
+   (action #"pets the shark")]
   (reply "\001ACTION purrs.\001"))
 
 (deftriggers greet-newbie [capa [newbie]]
