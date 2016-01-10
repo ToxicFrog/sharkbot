@@ -116,6 +116,7 @@ Note for admins: reloading `triggers` will reset the trigger table, disabling al
   <semirose> SharkyMcJaws swims alongside brother/sister of the lady of the long silence
 - multichannel support
 - support regexes in (command) triggers for e.g. (command #"spoilers\?*")
+<Ariaste> when I say "vet" i want Sharky to look alarmed and hide under the couch
 
 ## License
 
