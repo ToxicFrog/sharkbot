@@ -42,8 +42,7 @@
 
 (deftriggers show-spoiler-level [_ _]
   "Explicitly check and show the spoiler level."
-  [(command "spoilers")
-   (command "spoilers?")
+  [(command #"^spoilers[\?!]*$")
    (message #"check the spoiler level")
    (message #"what's the spoiler level")]
   (update-spoiler-level true))

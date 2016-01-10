@@ -41,11 +41,18 @@
     (= 0 (.groupCount m)) []
     :else                 (drop 1 (re-groups m))))
 
+(defn match-if-regex [re text]
+  (cond
+    (nil? text) nil
+    (string? re) (= re text)
+    :else (let [m (re-matcher re text)]
+            (args-from-matcher m))))
+
 (defn command
   "True if *msg* is the given bot command. Produces one arg per word following the command."
   [cmd]
   (let [[msg-cmd args] (parse-msg *irc* *msg*)]
-    (if (= cmd msg-cmd)
+    (if (match-if-regex cmd msg-cmd)
       args)))
 
 (defn action
