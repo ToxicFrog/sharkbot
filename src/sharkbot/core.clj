@@ -53,7 +53,7 @@
         host (getopt :server)
         nick (first (getopt :nick))
         _ (println (str "Connecting to " host ":" port " as " nick))
-        server (irc/connect host port nick :callbacks callbacks)]
+        server (irc/connect host port nick :pass (getopt :pass) :callbacks callbacks)]
     ; HACK HACK HACK
     ; enable keepalive on the socket, otherwise if it times out we never notice and the bot just hangs
     (-> @server :connection :socket (.setKeepAlive true))

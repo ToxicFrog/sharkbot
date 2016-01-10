@@ -15,6 +15,8 @@
    ["-n" "--nick NICKS" "Comma separated list of names to recognize; first will be used as IRC nick"
     :default ["SharkyMcJaws" "sharky"]
     :parse-fn #(string/split % #",")]
+   [nil "--pass PASS" "Password to send when logging in to IRC."
+    :default nil]
    ["-j" "--join CHANNEL" "IRC channel to join"
     :default "#gbchat"]
    ["-a" "--admin USER,..." "Names of users to recognize as administrators"
