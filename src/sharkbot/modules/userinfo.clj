@@ -5,6 +5,7 @@
     [sharkbot.irc :refer :all]
     [sharkbot.triggers :refer :all]
     [sharkbot.modules.spoilers :refer [update-spoiler-level]]
+    [clojure.string :as string]
     ))
 
 ; User info management
@@ -21,23 +22,22 @@
       (empty? info) (reply "I have no knowledge of that person.")
       :else (reply (str nick ":") (pr-str (get-user nick))))))
 
-(defn- keyify [kvs]
-  (->> kvs
-       (partition 2)
-       (mapcat (fn [kv] [(keyword (first kv)) (second kv)]))))
-
-(deftriggers set [nick kvs]
+(deftriggers set [nick [key & val]]
   "Set user info."
   [(command "set")]
-  (let [update (dissoc (apply assoc {} (keyify kvs)) :aliases)
-        state' (update-user nick #(conj (or % {}) update))]
-    (reply "Done.")
+  (let [key (-> key .toLowerCase keyword)
+        val (string/join " " val)
+        state' (if (empty? val)
+                 (update-user nick #(dissoc %1 key))
+                 (update-user nick #(assoc %1 key val)))]
     (update-state state')
+    (reply "Done.")
     (update-spoiler-level)))
 
 (deftriggers unset [nick ks]
   "Clear user info."
-  [(command "unset")]
+  [(command "unset")
+   (command "clear")]
   (let [state' (update-user nick #(apply dissoc % (map keyword ks)))]
     (reply "Done.")
     (update-state state')
