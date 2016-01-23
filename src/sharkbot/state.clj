@@ -1,5 +1,6 @@
 (ns sharkbot.state
-  (:require [sharkbot.flags :refer :all]
+  (:require [clojure.pprint :refer [pprint]]
+            [sharkbot.flags :refer :all]
             [clojure.java.io :as io]
             [clojure.tools.reader.edn :as edn]
             ))
@@ -7,8 +8,8 @@
 (def state (atom {:users {} :memory {}}))
 
 (defn save-state []
-  (println "Saving state:" (pr-str @state))
-  (spit (getopt :persistence) (prn-str @state)))
+  (println "Saving state to" (getopt :persistence))
+  (pprint @state (clojure.java.io/writer (getopt :persistence))))
 
 (defn load-state []
   (if (.exists (io/as-file (getopt :persistence)))
