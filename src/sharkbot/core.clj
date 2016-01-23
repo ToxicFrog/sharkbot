@@ -1,6 +1,5 @@
 (ns sharkbot.core
   (:require
-    [clojure.pprint :refer [pprint]]
     [sharkbot.state :refer :all]
     [sharkbot.flags :refer :all]
     [sharkbot.users :refer :all]
