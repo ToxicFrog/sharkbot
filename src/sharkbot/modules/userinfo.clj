@@ -42,19 +42,3 @@
     (reply "Done.")
     (update-state state')
     (update-spoiler-level)))
-
-(deftriggers alias [nick aliases]
-  "Add aliases."
-  [(command "alias")]
-  (let [state' (update-user nick #(assoc %1 :aliases (apply conj (or (:aliases %1) #{}) aliases)))]
-    (update-state state')
-    (reply "Done.")))
-
-(deftriggers unalias [nick aliases]
-  "Remove aliases."
-  [(command "unalias")]
-  (let [state' (update-user nick #(assoc %1 :aliases (apply disj (:aliases %1) aliases)))]
-    (update-state state')
-    (reply "Done.")))
-
-
