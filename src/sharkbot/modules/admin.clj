@@ -1,6 +1,7 @@
 (ns sharkbot.modules.admin
   (:require
     [sharkbot.flags :refer [getopt]]
+    [sharkbot.state :refer :all]
     [sharkbot.triggers :refer :all]
     [sharkbot.irc :refer :all]
     ))
@@ -17,3 +18,10 @@
   (when ((getopt :admin) capa)
     (let [message (apply str (interpose " " message))]
       (send-irc message))))
+
+(deftriggers reload-state [capa _]
+  "Force an immediate reload of state from disk."
+  [(command "reload-state")]
+  (when ((getopt :admin) capa)
+    (reply "Loading state.")
+    (load-state)))
