@@ -12,12 +12,14 @@
 (deftriggers info [capa [nick]]
   "Show information about a user."
   [(command "info")
-   (message #"tell me about (\S+)")]
-  (let [info (get-user nick)]
+   (message #"tell me about (\S+)")
+   (message #"what do you know about me")]
+  (let [nick (or nick capa)
+        info (get-user nick)]
     (cond
       (nil? info) nil
       (empty? info) (reply "I have no knowledge of that person.")
-      :else (reply (str (canonical-name nick) ":") (pr-str (get-user nick))))))
+      :else (reply (str nick ":") (pr-str (get-user nick))))))
 
 (defn- keyify [kvs]
   (->> kvs
